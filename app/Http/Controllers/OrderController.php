@@ -13,7 +13,7 @@ public function adminIndex()
 {
     $orders = Order::with('product', 'user')->get(); // fetch all orders, include user and product
 
-    return response()->json($orders, 200);
+    return response()->json($orders);
 }
 
     // Existing store() and index() methods here...
