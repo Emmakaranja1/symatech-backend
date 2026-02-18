@@ -36,7 +36,7 @@ use App\Http\Controllers\UserController;
         Route::get('/admin/products', [ProductController::class, 'index']);
 
         // order management
-        Route::get('/admin/orders', [OrderController::class, 'index']);
+        Route::get('/admin/orders', [OrderController::class, 'adminIndex']);
     });
 
     // ------------------- NORMAL USER ROUTES -------------------
