@@ -8,40 +8,32 @@ use Illuminate\Http\Request;
 class UserController extends Controller
 {
     // Admin: Get all users
-    public function index()
-    {
-        return response()->json(User::all());
-    }
+   public function index() {
+    return response()->json(User::all(), 200);
+}
+
 
     // Admin: Activate user
-    public function activate(Request $request)
-    {
-        $request->validate([
-            'user_id' => 'required|integer|exists:users,id',
-        ]);
+    public function activate($id) {
+    $user = User::find($id);
+    if (!$user) return response()->json(['message'=>'User not found'], 404);
 
-        $user = User::find($request->user_id);
-        $user->status = true; 
-        $user->save();
+    $user->status = true;
+    $user->save();
 
-        return response()->json([
-            'message' => 'User activated successfully',
-        ], 200);
-    }
+    return response()->json(['message'=>'User activated successfully', 'user'=>$user], 200);
+}
+
 
     // Admin: Deactivate user
-    public function deactivate(Request $request)
-    {
-        $request->validate([
-            'user_id' => 'required|integer|exists:users,id',
-        ]);
+    public function deactivate($id) {
+    $user = User::find($id);
+    if (!$user) return response()->json(['message'=>'User not found'], 404);
 
-        $user = User::find($request->user_id);
-        $user->status = false; 
-        $user->save();
+    $user->status = false;
+    $user->save();
 
-        return response()->json([
-            'message' => 'User deactivated successfully',
-        ], 200);
-    }
+    return response()->json(['message'=>'User deactivated successfully', 'user'=>$user], 200);
+}
+
 }

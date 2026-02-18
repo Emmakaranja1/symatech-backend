@@ -23,8 +23,8 @@ use App\Http\Controllers\UserController;
       // Admin routes
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/users', [UserController::class, 'index']);
-        Route::post('/admin/users/activate', [UserController::class, 'activate']);
-        Route::post('/admin/users/deactivate', [UserController::class, 'deactivate']);
+        Route::patch('/admin/users/{id}/activate', [UserController::class, 'activate']);
+        Route::patch('/admin/users/{id}/deactivate', [UserController::class, 'deactivate']);
         Route::post('/admin/products', [ProductController::class, 'store']);
         Route::put('/admin/products/{id}', [ProductController::class, 'update']);
         Route::delete('/admin/products/{id}', [ProductController::class, 'destroy']);
