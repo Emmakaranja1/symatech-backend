@@ -6,9 +6,31 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
 use App\Models\Product;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
+
 
 class Order extends Model
 {
+
+    use LogsActivity;
+     public function getActivitylogOptions(): LogOptions
+{
+    return LogOptions::defaults()
+        ->useLogName('order')
+        ->logFillable()
+        ->logOnlyDirty()
+        ->dontSubmitEmptyLogs()
+        ->setDescriptionForEvent(fn(string $eventName) => "Order {$eventName}");
+}
+
+public function activityLogs()
+{
+    return $this->morphMany(\Spatie\Activitylog\Models\Activity::class, 'subject')
+        ->orderBy('created_at', 'desc');
+}
+
+
     use HasFactory;
 
     protected $fillable = [

@@ -21,6 +21,17 @@ class UserController extends Controller
     $user->status = true;
     $user->save();
 
+
+        // ✅ Log activity
+        activity()
+            ->causedBy(auth()->user())
+            ->performedOn($user)
+            ->withProperties([
+                'activated_user_id' => $user->id,
+                'email' => $user->email,
+            ])
+            ->log('User activated');
+
     return response()->json(['message'=>'User activated successfully', 'user'=>$user], 200);
 }
 
@@ -32,6 +43,16 @@ class UserController extends Controller
 
     $user->status = false;
     $user->save();
+
+     // ✅ Log activity
+        activity()
+            ->causedBy(auth()->user())
+            ->performedOn($user)
+            ->withProperties([
+                'deactivated_user_id' => $user->id,
+                'email' => $user->email,
+            ])
+            ->log('User deactivated');
 
     return response()->json(['message'=>'User deactivated successfully', 'user'=>$user], 200);
 }

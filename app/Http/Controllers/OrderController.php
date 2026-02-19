@@ -66,6 +66,17 @@ public function adminIndex()
             'status' => 'pending',
         ]);
 
+        // ✅ Log activity
+        activity()
+        ->causedBy($request->user())
+        ->performedOn($order)
+        ->withProperties([
+            'product_id' => $product->id,
+            'quantity' => $order->quantity,
+            'total_price' => $order->total_price,
+        ])
+        ->log('Order created');
+
         return response()->json([
             'message' => 'Order placed successfully',
             'order_id' => $order->id,

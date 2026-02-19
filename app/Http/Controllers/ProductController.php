@@ -4,77 +4,91 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Spatie\Activitylog\Facades\Activity;       
 
 
 class ProductController extends Controller
 {
-    /**
-     * List all products.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
+    // List all products
     public function index()
     {
-        $products = Product::all();
-        return response()->json($products, 200);
+        return response()->json(Product::all(), 200);
     }
-     
+
+    // Show single product
     public function show($id)
-{
-    $product = Product::find($id);
-    if (!$product) {
-        return response()->json(['message' => 'Product not found'], 404);
-    }
-    return response()->json($product, 200);
-}
-    /**
-     * Store a newly created product in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function store(Request $request)
-    {
-        // Validate incoming request data
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-        ]);
-
-        // Create a new product
-        $product = Product::create($request->all());
-
-        return response()->json([
-            'message' => 'Product created successfully',
-            'product' => $product
-        ], 201);
-    }
-
-    /**
-     * Update an existing product.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function update(Request $request, $id)
     {
         $product = Product::find($id);
+
         if (!$product) {
             return response()->json(['message' => 'Product not found'], 404);
         }
 
-        // Validate only provided fields
-        $request->validate([
+        return response()->json($product, 200);
+    }
+// Store new product
+public function store(Request $request)
+{
+    $user = auth()->user();
+    if (!$user) {
+        return response()->json(['error' => 'Unauthenticated'], 401);
+    }
+
+    $validated = $request->validate([
+        'name' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'price' => 'required|numeric|min:0',
+        'stock' => 'required|integer|min:0',
+    ]);
+
+    \DB::beginTransaction();
+    try {
+        $product = Product::create($validated);
+        
+        activity()
+            ->causedBy($user)
+            ->performedOn($product)
+            ->withProperties(['attributes' => $validated])
+            ->log('created');
+            
+        \DB::commit();
+        
+        return response()->json([
+            'message' => 'Product created successfully',
+            'product' => $product
+        ], 201);
+        
+    } catch (\Exception $e) {
+        \DB::rollBack();
+        \Log::error('Error creating product: ' . $e->getMessage());
+        return response()->json(['error' => 'Error creating product'], 500);
+    }
+}
+
+    // Update product
+    public function update(Request $request, $id)
+    {
+        $product = Product::find($id);
+
+        if (!$product) {
+            return response()->json(['message' => 'Product not found'], 404);
+        }
+
+        $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
             'price' => 'sometimes|required|numeric|min:0',
             'stock' => 'sometimes|required|integer|min:0',
         ]);
 
-        $product->update($request->all());
+        $product->update($validated);
+
+        // Log update
+        activity()
+            ->causedBy(auth()->user())
+            ->performedOn($product)
+            ->withProperties($validated)
+            ->log('Product updated');
 
         return response()->json([
             'message' => 'Product updated successfully',
@@ -82,18 +96,20 @@ class ProductController extends Controller
         ], 200);
     }
 
-    /**
-     * Delete a product.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\JsonResponse
-     */
+    // Delete product
     public function destroy($id)
     {
         $product = Product::find($id);
+
         if (!$product) {
             return response()->json(['message' => 'Product not found'], 404);
         }
+
+        // Optional: Log deletion BEFORE deleting
+        activity()
+            ->causedBy(auth()->user())
+            ->performedOn($product)
+            ->log('Product deleted');
 
         $product->delete();
 
@@ -102,4 +118,5 @@ class ProductController extends Controller
         ], 200);
     }
 }
+
 

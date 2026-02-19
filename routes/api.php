@@ -52,5 +52,11 @@ use App\Http\Controllers\UserController;
         Route::get('/orders/{id}', [OrderController::class, 'show']);
         Route::delete('/orders/{id}', [OrderController::class, 'destroy']);
     });
+
+    Route::get('/test-activity', function() {
+    \Log::info('Testing direct activity log');
+    activity()->log('Test activity log');
+    return response()->json(['message' => 'Test activity logged']);
+});
     
 });

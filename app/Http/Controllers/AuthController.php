@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
-
 class AuthController extends Controller
 {
    // Register new user
@@ -24,7 +23,13 @@ class AuthController extends Controller
             'email'=>$request->email,
             'password'=>Hash::make($request->password),
             'role' => $request->role ?? 'user', // default to user
+            'status' => true // Default status to active
         ]);
+
+        // Log the registration
+        activity()
+            ->causedBy($user)
+            ->log('New user registered');
 
         return response()->json(['message'=>'User registered successfully', 'user'=>$user], 201);
     }
@@ -46,18 +51,27 @@ class AuthController extends Controller
             ]);
         }
 
+    
+
+
         // Check role if provided
         if ($request->has('role') && $user->role !== $request->role) {
             return response()->json([
                 'message' => 'Unauthorized for this role.'
             ], 403);
         }
-
+       
+       // Check if account is active
         if (!$user->status) {
             return response()->json([
               'message' => 'Your account is deactivated.'
     ], 403);
 }
+          
+          // 🔥 Log only after successful validation
+    activity()
+        ->causedBy($user)
+        ->log('User logged in');
 
 
         $token = $user->createToken('auth_token')->plainTextToken;

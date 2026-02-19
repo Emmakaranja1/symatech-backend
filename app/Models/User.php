@@ -11,6 +11,20 @@ use App\Models\order;
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
+
+
+protected static $logAttributes = ['name', 'email', 'role', 'status'];
+protected static $logOnlyDirty = true;
+
+public function getActivitylogOptions(): LogOptions
+{
+    return LogOptions::defaults()
+        ->useLogName('user')
+        ->logFillable()
+        ->logOnlyDirty()
+        ->dontSubmitEmptyLogs()
+        ->setDescriptionForEvent(fn(string $eventName) => "User {$eventName}");
+}
    
    public function orders()
 {
