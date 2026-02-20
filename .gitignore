@@ -17,3 +17,9 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# Documentation files - keep private
+SECURITY_RECOMMENDATIONS.md
+POSTMAN_TEST_GUIDE.md
+IMPLEMENTATION_SUMMARY.md
+API_DOCUMENTATION.md

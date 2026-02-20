@@ -33,6 +33,32 @@ class AuthController extends Controller
 
         return response()->json(['message'=>'User registered successfully', 'user'=>$user], 201);
     }
+
+    // Register new admin (admin only)
+    public function registerAdmin(Request $request)
+    {
+        $request->validate([
+            'name'=>'required|string|max:255',
+            'email'=>'required|string|email|unique:users',
+            'password'=>'required|string|min:6|confirmed',
+        ]);
+
+        $user = User::create([
+            'name'=>$request->name,
+            'email'=>$request->email,
+            'password'=>Hash::make($request->password),
+            'role' => 'admin', // Force admin role
+            'status' => true // Default status to active
+        ]);
+
+        // Log the admin registration
+        activity()
+            ->causedBy($request->user())
+            ->performedOn($user)
+            ->log('New admin registered');
+
+        return response()->json(['message'=>'Admin registered successfully', 'user'=>$user], 201);
+    }
  
     // Login user(user or admin)
     public function login(Request $request)
