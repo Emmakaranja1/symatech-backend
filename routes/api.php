@@ -3,14 +3,38 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\JWTAuthController;
+use App\Http\Controllers\JWTTestController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\OrderController;
-use App\Http\Controllers\UserController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\UserController;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+
+// JWT Authentication routes
+Route::prefix('jwt')->group(function () {
+    Route::post('/register', [JWTAuthController::class, 'register']);
+    Route::post('/register-admin', [JWTAuthController::class, 'registerAdmin']);
+    Route::post('/login', [JWTAuthController::class, 'login']);
+    
+    // JWT protected routes
+    Route::middleware('jwt.auth')->group(function () {
+        Route::get('/me', [JWTAuthController::class, 'me']);
+        Route::post('/logout', [JWTAuthController::class, 'logout']);
+        Route::post('/refresh', [JWTAuthController::class, 'refresh']);
+        
+        // JWT test routes
+        Route::get('/test/protected', [JWTTestController::class, 'testProtectedRoute']);
+        Route::post('/test/validate', [JWTTestController::class, 'testTokenValidation']);
+        Route::post('/test/refresh', [JWTTestController::class, 'testRefresh']);
+    });
+});
+
+// JWT test routes (public for testing)
+Route::get('/jwt/test/dual-auth', [JWTTestController::class, 'testDualAuth']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
