@@ -39,6 +39,7 @@ public function activityLogs()
         'quantity',
         'total_price',
         'status',
+        'payment_status',
     ];
 
     // Link order to user
@@ -51,5 +52,46 @@ public function activityLogs()
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    // Link order to payments
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    // Get the latest payment
+    public function latestPayment()
+    {
+        return $this->hasOne(Payment::class)->latest();
+    }
+
+    // Check if order is paid
+    public function isPaid()
+    {
+        return $this->payment_status === 'paid';
+    }
+
+    // Check if order payment is pending
+    public function isPaymentPending()
+    {
+        return $this->payment_status === 'pending';
+    }
+
+    // Mark order as paid
+    public function markAsPaid()
+    {
+        $this->update([
+            'payment_status' => 'paid',
+            'status' => 'processing', // Update order status when paid
+        ]);
+    }
+
+    // Mark order payment as failed
+    public function markPaymentFailed()
+    {
+        $this->update([
+            'payment_status' => 'failed',
+        ]);
     }
 }

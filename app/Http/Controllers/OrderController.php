@@ -15,7 +15,7 @@ class OrderController extends Controller
       
 public function adminIndex(Request $request)
 {
-    $query = Order::with('product', 'user');
+    $query = Order::with(['product', 'user', 'latestPayment']);
     
     // Filter by date range if provided
     if ($request->has('start_date') && $request->has('end_date')) {
@@ -40,6 +40,11 @@ public function adminIndex(Request $request)
     if ($request->has('status')) {
         $query->where('status', $request->input('status'));
     }
+
+    // Filter by payment status if provided
+    if ($request->has('payment_status')) {
+        $query->where('payment_status', $request->input('payment_status'));
+    }
     
     // Pagination
     $perPage = $request->input('per_page', 15);
@@ -51,11 +56,11 @@ public function adminIndex(Request $request)
     // Existing store() and index() methods here...
 
     /**
-     * Show a single order by ID for the authenticated user
+     * Show a single order by ID for authenticated user
      */
     public function show($id, Request $request)
     {
-        $order = Order::with('product')
+        $order = Order::with(['product', 'payments'])
             ->where('id', $id)
             ->where('user_id', $request->user()->id) // ensure user can only see their own order
             ->first();
@@ -96,6 +101,7 @@ public function adminIndex(Request $request)
             'quantity' => $request->quantity,
             'total_price' => $totalPrice,
             'status' => 'pending',
+            'payment_status' => 'pending',
         ]);
 
         // ✅ Log activity
@@ -114,15 +120,18 @@ public function adminIndex(Request $request)
             'order_id' => $order->id,
             'product_name' => $product->name,
             'quantity' => $order->quantity,
-            'total' => $order->total_price
+            'total' => $order->total_price,
+            'payment_status' => $order->payment_status,
+            'next_step' => 'Proceed to payment to complete your order'
         ], 201);
     }
 
     // List orders for logged-in user
     public function index(Request $request)
     {
-        $orders = Order::with('product')
+        $orders = Order::with(['product', 'latestPayment'])
             ->where('user_id', $request->user()->id)
+            ->orderBy('created_at', 'desc')
             ->get();
 
         return response()->json($orders, 200);

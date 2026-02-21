@@ -23,3 +23,41 @@ SECURITY_RECOMMENDATIONS.md
 POSTMAN_TEST_GUIDE.md
 IMPLEMENTATION_SUMMARY.md
 API_DOCUMENTATION.md
+
+# Test scripts and temporary files - exclude from version control
+tests/scripts/
+tests/postman/
+tests/debug/
+*.sh
+test_*.sh
+*_test*.sh
+*_postman*.json
+*_diagnosis*.sh
+*_solution*.sh
+*_guide*.sh
+mpesa_*.sh
+flutterwave_*.sh
+quick_*.sh
+final_*.sh
+
+# Debug files
+debug_*.php
+mpesa_debug.php
+payment_debug.php
+
+# Temporary test files
+test_*.php
+temp_*.php
+
+# Postman collections (keep in local development only)
+flutterwave_postman_collection.json
+
+# Environment specific test files
+.env.test
+.env.local
+.env.testing
+
+# Logs and temporary outputs
+*.log
+test_output_*.txt
+curl_*.txt
