@@ -1,25 +1,38 @@
 # Symatech Backend API
 
-A Laravel-based REST API for e-commerce order management with role-based access control and comprehensive reporting system.
+A production-ready Laravel-based REST API for e-commerce order management with comprehensive Redis state management, role-based access control, and advanced reporting system.
 
 ## Features
 
-- **Authentication**: User registration/login with Laravel Sanctum tokens
+### Core Functionality
+- **Authentication**: User registration/login with Laravel Sanctum tokens and JWT support
 - **Role-based Access**: Admin and user roles with specific permissions
 - **Product Management**: CRUD operations for products (admin only)
 - **Order Management**: Create, view, and manage orders with stock tracking
 - **Payment Integration**: M-Pesa and Flutterwave payment processing
 - **Export Functionality**: Export orders to Excel and PDF (admin only)
 - **Activity Logging**: Comprehensive audit trail using Spatie Activitylog
-- **Enhanced Reporting System**: Advanced admin reports with filtering and export
-- **Data Validation**: Robust input validation and error handling
+
+### Redis State Management
+- **Shopping Cart**: Persistent cart storage with 24-hour expiry
+- **User Preferences**: Complex preference storage with 30-day expiry
+- **Payment Sessions**: Temporary payment data with 30-minute TTL
+- **Rate Limiting**: Configurable rate limiting with automatic blocking
+- **Connection Monitoring**: Real-time Redis health and performance monitoring
+
+### Enhanced Reporting System
+- **Dashboard Statistics**: Real-time system metrics and analytics
+- **User Registration Trends**: Daily/weekly/monthly registration analytics
+- **Activity Log Reports**: Complete audit trail with filtering and export
+- **Export Capabilities**: Excel and PDF export with professional formatting
 
 ## Tech Stack
 
 - **Framework**: Laravel 10.x
 - **PHP**: ^8.1
 - **Database**: MySQL/PostgreSQL
-- **Authentication**: Laravel Sanctum
+- **Cache/Session**: Redis with Predis client
+- **Authentication**: Laravel Sanctum + JWT
 - **Payment Processing**: M-Pesa API, Flutterwave API
 - **Logging**: Spatie Laravel Activitylog
 - **Export**: Maatwebsite Excel, DomPDF
@@ -44,17 +57,28 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-4. Configure database in `.env`
+5. Configure database and Redis in `.env`
 ```env
+# Database Configuration
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_DATABASE=symatech
 DB_USERNAME=your_username
 DB_PASSWORD=your_password
+
+# Redis Configuration
+REDIS_CLIENT=predis
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+# Cache and Session
+CACHE_DRIVER=redis
+SESSION_DRIVER=redis
 ```
 
-5. Configure payment providers in `.env`
+6. Configure payment providers in `.env`
 ```env
 # M-Pesa Configuration
 MPESA_CONSUMER_KEY=your_consumer_key
@@ -70,14 +94,19 @@ FLUTTERWAVE_PUBLIC_KEY=your_public_key
 FLUTTERWAVE_ENCRYPTION_KEY=your_encryption_key
 FLUTTERWAVE_ENVIRONMENT=sandbox
 FLUTTERWAVE_CALLBACK_URL=https://your-domain.com/api/callbacks/flutterwave
+
+# JWT Configuration
+JWT_SECRET=your_jwt_secret_key
+JWT_TTL=1440
+JWT_REFRESH_TTL=20160
 ```
 
-6. Run migrations
+7. Run migrations
 ```bash
 php artisan migrate
 ```
 
-7. Seed database (optional)
+8. Seed database (optional)
 ```bash
 php artisan db:seed
 ```
@@ -143,6 +172,47 @@ php artisan db:seed
 ### Payment Callbacks (Public)
 - `POST /api/callbacks/mpesa` - M-Pesa payment callback
 - `POST /api/callbacks/flutterwave` - Flutterwave payment callback
+
+### Redis State Management (Public - Testing)
+#### Shopping Cart
+- `POST /api/redis/cart/add` - Add item to cart
+- `GET /api/redis/cart` - Get cart contents
+- `PUT /api/redis/cart/quantity` - Update item quantity
+- `DELETE /api/redis/cart/item` - Remove item from cart
+- `GET /api/redis/cart/summary` - Get cart summary
+- `DELETE /api/redis/cart` - Clear cart
+
+#### User Preferences
+- `POST /api/redis/preferences/set` - Set preference
+- `GET /api/redis/preferences/get` - Get preference
+- `GET /api/redis/preferences/all` - Get all preferences
+- `POST /api/redis/preferences/multiple` - Set multiple preferences
+- `DELETE /api/redis/preferences/remove` - Remove preference
+- `DELETE /api/redis/preferences/clear` - Clear all preferences
+
+#### Payment Sessions
+- `POST /api/redis/payment/session/create` - Create payment session
+- `GET /api/redis/payment/session` - Get payment session
+- `PUT /api/redis/payment/session/update` - Update session
+- `PUT /api/redis/payment/session/extend` - Extend session TTL
+- `GET /api/redis/payment/session/validity` - Check session validity
+- `DELETE /api/redis/payment/session` - Delete session
+
+#### Rate Limiting
+- `POST /api/redis/rate-limit/check` - Check rate limit
+- `GET /api/redis/rate-limit/status` - Get rate limit status
+- `POST /api/redis/rate-limit/multiple` - Check multiple limits
+- `GET /api/redis/rate-limit/blocked` - Check if blocked
+- `GET /api/redis/rate-limit/test` - Automated rate limit test
+- `DELETE /api/redis/rate-limit/clear` - Clear rate limit
+
+#### Connection Monitoring
+- `GET /api/redis/connection/test` - Test Redis connection
+- `GET /api/redis/connection/operations` - Test basic operations
+- `GET /api/redis/connection/hash` - Test hash operations
+- `GET /api/redis/connection/info` - Get server info
+- `GET /api/redis/connection/monitor` - Monitor connection
+- `GET /api/redis/connection/health` - Health check
 
 ## Database Schema
 

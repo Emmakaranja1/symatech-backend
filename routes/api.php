@@ -16,6 +16,16 @@ use App\Http\Controllers\Redis\PaymentSessionController;
 use App\Http\Controllers\Redis\RateLimitController;
 use App\Http\Controllers\Redis\RedisConnectionController;
 
+// Health check endpoint for deployment monitoring
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now(),
+        'version' => app()->version(),
+        'environment' => app()->environment()
+    ]);
+});
+
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -31,16 +41,8 @@ Route::prefix('jwt')->group(function () {
         Route::get('/me', [JWTAuthController::class, 'me']);
         Route::post('/logout', [JWTAuthController::class, 'logout']);
         Route::post('/refresh', [JWTAuthController::class, 'refresh']);
-        
-        // JWT test routes
-        Route::get('/test/protected', [JWTTestController::class, 'testProtectedRoute']);
-        Route::post('/test/validate', [JWTTestController::class, 'testTokenValidation']);
-        Route::post('/test/refresh', [JWTTestController::class, 'testRefresh']);
     });
 });
-
-// JWT test routes (public for testing)
-Route::get('/jwt/test/dual-auth', [JWTTestController::class, 'testDualAuth']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -115,94 +117,51 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/payments', [PaymentController::class, 'getUserPayments']);
     });
 
-    // Debug route for authentication testing
-    Route::get('/debug-auth', function () {
-        if (auth()->check()) {
-            return response()->json([
-                'authenticated' => true,
-                'user_id' => auth()->id(),
-                'user_email' => auth()->user()->email,
-                'user_role' => auth()->user()->role,
-            ]);
-        } else {
-            return response()->json([
-                'authenticated' => false,
-                'message' => 'No authenticated user found'
-            ]);
-        }
-    })->middleware('auth:sanctum');
+    // Payment callback routes (public, but secured by validation)
+    Route::post('/callbacks/mpesa', [PaymentController::class, 'handleMpesaCallback']);
+    Route::post('/callbacks/flutterwave', [PaymentController::class, 'handleFlutterwaveCallback']);
 
-    // Debug route for M-PESA configuration
-    Route::get('/debug-mpesa-config', function () {
-        return response()->json([
-            'mpesa_config' => [
-                'consumer_key' => config('services.mpesa.consumer_key') ? 'SET' : 'NOT SET',
-                'consumer_secret' => config('services.mpesa.consumer_secret') ? 'SET' : 'NOT SET',
-                'passkey' => config('services.mpesa.passkey') ? 'SET' : 'NOT SET',
-                'shortcode' => config('services.mpesa.shortcode'),
-                'environment' => config('services.mpesa.environment'),
-                'callback_url' => config('services.mpesa.callback_url'),
-            ],
-            'app_url' => config('app.url'),
-            'solutions' => [
-                '1. Set MPESA_CALLBACK_URL in .env to a public URL',
-                '2. Use ngrok for local development: https://ngrok.com/download',
-                '3. Example: MPESA_CALLBACK_URL=https://abc123.ngrok.io/api/callbacks/mpesa'
-            ]
-        ]);
+    // Redis State Management Routes (Public for testing)
+    Route::prefix('redis')->group(function () {
+        // Shopping Cart Routes
+        Route::post('/cart/add', [ShoppingCartController::class, 'addItem']);
+        Route::get('/cart', [ShoppingCartController::class, 'getCart']);
+        Route::delete('/cart/item', [ShoppingCartController::class, 'removeItem']);
+        Route::put('/cart/quantity', [ShoppingCartController::class, 'updateQuantity']);
+        Route::delete('/cart', [ShoppingCartController::class, 'clearCart']);
+        Route::get('/cart/summary', [ShoppingCartController::class, 'getCartSummary']);
+
+        // User Preferences Routes
+        Route::post('/preferences/set', [UserPreferencesController::class, 'setPreference']);
+        Route::get('/preferences/get', [UserPreferencesController::class, 'getPreference']);
+        Route::get('/preferences/all', [UserPreferencesController::class, 'getAllPreferences']);
+        Route::delete('/preferences/remove', [UserPreferencesController::class, 'removePreference']);
+        Route::delete('/preferences/clear', [UserPreferencesController::class, 'clearAllPreferences']);
+        Route::post('/preferences/multiple', [UserPreferencesController::class, 'setMultiplePreferences']);
+
+        // Payment Session Routes
+        Route::post('/payment/session/create', [PaymentSessionController::class, 'createSession']);
+        Route::get('/payment/session', [PaymentSessionController::class, 'getSession']);
+        Route::put('/payment/session/update', [PaymentSessionController::class, 'updateSession']);
+        Route::delete('/payment/session', [PaymentSessionController::class, 'deleteSession']);
+        Route::put('/payment/session/extend', [PaymentSessionController::class, 'extendSession']);
+        Route::get('/payment/session/validity', [PaymentSessionController::class, 'checkSessionValidity']);
+
+        // Rate Limiting Routes
+        Route::post('/rate-limit/check', [RateLimitController::class, 'checkRateLimit']);
+        Route::delete('/rate-limit/clear', [RateLimitController::class, 'clearRateLimit']);
+        Route::get('/rate-limit/status', [RateLimitController::class, 'getRateLimitStatus']);
+        Route::post('/rate-limit/increment', [RateLimitController::class, 'incrementRateLimit']);
+        Route::post('/rate-limit/multiple', [RateLimitController::class, 'checkMultipleRateLimits']);
+        Route::get('/rate-limit/blocked', [RateLimitController::class, 'isBlocked']);
+        Route::get('/rate-limit/test', [RateLimitController::class, 'testRateLimiting']);
+
+        // Redis Connection Routes
+        Route::get('/connection/test', [RedisConnectionController::class, 'testConnection']);
+        Route::get('/connection/operations', [RedisConnectionController::class, 'testBasicOperations']);
+        Route::get('/connection/hash', [RedisConnectionController::class, 'testHashOperations']);
+        Route::get('/connection/info', [RedisConnectionController::class, 'getRedisInfo']);
+        Route::get('/connection/monitor', [RedisConnectionController::class, 'monitorConnection']);
+        Route::get('/connection/health', [RedisConnectionController::class, 'healthCheck']);
     });
-
-    Route::get('/test-activity', function() {
-        \Log::info('Testing direct activity log');
-        activity()->log('Test activity log');
-        return response()->json(['message' => 'Test activity logged']);
-    });
-});
-
-// Payment callback routes (public, but secured by validation)
-Route::post('/callbacks/mpesa', [PaymentController::class, 'handleMpesaCallback']);
-Route::post('/callbacks/flutterwave', [PaymentController::class, 'handleFlutterwaveCallback']);
-
-// Redis State Management Routes (Public for testing)
-Route::prefix('redis')->group(function () {
-    // Shopping Cart Routes
-    Route::post('/cart/add', [ShoppingCartController::class, 'addItem']);
-    Route::get('/cart', [ShoppingCartController::class, 'getCart']);
-    Route::delete('/cart/item', [ShoppingCartController::class, 'removeItem']);
-    Route::put('/cart/quantity', [ShoppingCartController::class, 'updateQuantity']);
-    Route::delete('/cart', [ShoppingCartController::class, 'clearCart']);
-    Route::get('/cart/summary', [ShoppingCartController::class, 'getCartSummary']);
-
-    // User Preferences Routes
-    Route::post('/preferences/set', [UserPreferencesController::class, 'setPreference']);
-    Route::get('/preferences/get', [UserPreferencesController::class, 'getPreference']);
-    Route::get('/preferences/all', [UserPreferencesController::class, 'getAllPreferences']);
-    Route::delete('/preferences/remove', [UserPreferencesController::class, 'removePreference']);
-    Route::delete('/preferences/clear', [UserPreferencesController::class, 'clearAllPreferences']);
-    Route::post('/preferences/multiple', [UserPreferencesController::class, 'setMultiplePreferences']);
-
-    // Payment Session Routes
-    Route::post('/payment/session/create', [PaymentSessionController::class, 'createSession']);
-    Route::get('/payment/session', [PaymentSessionController::class, 'getSession']);
-    Route::put('/payment/session/update', [PaymentSessionController::class, 'updateSession']);
-    Route::delete('/payment/session', [PaymentSessionController::class, 'deleteSession']);
-    Route::put('/payment/session/extend', [PaymentSessionController::class, 'extendSession']);
-    Route::get('/payment/session/validity', [PaymentSessionController::class, 'checkSessionValidity']);
-
-    // Rate Limiting Routes
-    Route::post('/rate-limit/check', [RateLimitController::class, 'checkRateLimit']);
-    Route::delete('/rate-limit/clear', [RateLimitController::class, 'clearRateLimit']);
-    Route::get('/rate-limit/status', [RateLimitController::class, 'getRateLimitStatus']);
-    Route::post('/rate-limit/increment', [RateLimitController::class, 'incrementRateLimit']);
-    Route::post('/rate-limit/multiple', [RateLimitController::class, 'checkMultipleRateLimits']);
-    Route::get('/rate-limit/blocked', [RateLimitController::class, 'isBlocked']);
-    Route::get('/rate-limit/test', [RateLimitController::class, 'testRateLimiting']);
-
-    // Redis Connection Routes
-    Route::get('/connection/test', [RedisConnectionController::class, 'testConnection']);
-    Route::get('/connection/operations', [RedisConnectionController::class, 'testBasicOperations']);
-    Route::get('/connection/hash', [RedisConnectionController::class, 'testHashOperations']);
-    Route::get('/connection/info', [RedisConnectionController::class, 'getRedisInfo']);
-    Route::get('/connection/monitor', [RedisConnectionController::class, 'monitorConnection']);
-    Route::get('/connection/health', [RedisConnectionController::class, 'healthCheck']);
 });

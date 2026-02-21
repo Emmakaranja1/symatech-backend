@@ -1,0 +1,47 @@
+services:
+  # Web Service
+  - type: web
+    name: symatech-backend
+    env: php
+    plan: starter
+    runtime: php-8.2
+    buildCommand: |
+      composer install --no-dev --optimize-autoloader
+      cp .env.example .env
+      php artisan key:generate
+      php artisan storage:link
+      php artisan migrate --force
+      php artisan config:cache
+      php artisan route:cache
+      php artisan view:cache
+    startCommand: php artisan serve --host=0.0.0.0 --port=$PORT
+    healthCheckPath: /api/health
+    autoDeploy: true
+    
+    # Environment variables (these will be set in Render dashboard)
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: LOG_LEVEL
+        value: error
+      - key: CACHE_DRIVER
+        value: redis
+      - key: SESSION_DRIVER
+        value: redis
+      - key: QUEUE_CONNECTION
+        value: redis
+
+  # Redis Service
+  - type: redis
+    name: symatech-redis
+    plan: starter
+    ipAllowList: [] # Only accessible from within the same region
+
+# PostgreSQL Database (using Render's managed PostgreSQL)
+databases:
+  - name: symatech-db
+    plan: starter
+    databaseName: symatech
+    user: symatech_user
