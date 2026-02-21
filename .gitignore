@@ -19,6 +19,7 @@ yarn-error.log
 /.vscode
 
 # Documentation files - keep private
+docs/
 SECURITY_RECOMMENDATIONS.md
 POSTMAN_TEST_GUIDE.md
 IMPLEMENTATION_SUMMARY.md
@@ -51,6 +52,8 @@ temp_*.php
 
 # Postman collections (keep in local development only)
 flutterwave_postman_collection.json
+*_postman*.json
+*.postman_collection.json
 
 # Environment specific test files
 .env.test
