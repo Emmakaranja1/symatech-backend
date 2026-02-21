@@ -9,6 +9,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ReportingController;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -66,6 +67,27 @@ Route::middleware('auth:sanctum')->group(function () {
         // Payment management
         Route::get('/admin/payments', [PaymentController::class, 'getAdminPayments']);
         Route::post('/payments/refund', [PaymentController::class, 'processRefund']);
+
+        // Reporting System (Admin Only)
+        Route::prefix('admin/reports')->group(function () {
+            // Dashboard Statistics
+            Route::get('/dashboard', [ReportingController::class, 'dashboardStats']);
+            
+            // User Registration Trends
+            Route::get('/user-registration-trends', [ReportingController::class, 'userRegistrationTrends']);
+            Route::get('/user-registration-trends/export/excel', [ReportingController::class, 'exportUserRegistrationTrendsExcel']);
+            Route::get('/user-registration-trends/export/pdf', [ReportingController::class, 'exportUserRegistrationTrendsPdf']);
+            
+            // Activity Log Reports (All Users)
+            Route::get('/activity-log', [ReportingController::class, 'activityLogReport']);
+            Route::get('/activity-log/export/excel', [ReportingController::class, 'exportActivityLogExcel']);
+            Route::get('/activity-log/export/pdf', [ReportingController::class, 'exportActivityLogPdf']);
+            
+            // Normal User Activity Reports (Normal Users Only)
+            Route::get('/normal-user-activity', [ReportingController::class, 'normalUserActivityLog']);
+            Route::get('/normal-user-activity/export/excel', [ReportingController::class, 'exportNormalUserActivityExcel']);
+            Route::get('/normal-user-activity/export/pdf', [ReportingController::class, 'exportNormalUserActivityPdf']);
+        });
     });
 
     // ------------------- NORMAL USER ROUTES -------------------
