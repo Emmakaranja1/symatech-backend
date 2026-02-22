@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     libpq-dev \
     libssl-dev \
-    netcat \
+    netcat-openbsd \
     && docker-php-ext-configure pgsql --with-pgsql=/usr/local/pgsql \
     && docker-php-ext-install pdo pdo_pgsql pgsql mbstring exif pcntl bcmath zip gd \
     && apt-get clean \
