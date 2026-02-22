@@ -25,7 +25,6 @@ storage/framework/testing/*
 # Test files
 test/
 tests/
-*.sh
 
 # IDE files
 .idea/
