@@ -38,8 +38,9 @@ RUN chown -R www-data:www-data /var/www/html \
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Copy environment template (will be overridden by environment variables in production)
-COPY .env.example .env
+# Copy real environment file for local development
+# Will be overridden by environment variables in production
+COPY .env .env
 
 # Generate application key
 RUN php artisan key:generate --force
