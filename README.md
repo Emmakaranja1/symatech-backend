@@ -75,7 +75,7 @@ symatech-backend/
 - **PHP 8.x**: Latest PHP version with performance improvements
 
 ### Database & Caching
-- **MYSQL 8.0**: Reliable relational database
+- **PGSQL 8.0**: Reliable relational database
 - **Redis**: High-performance caching and session storage
 - **Eloquent ORM**: Efficient database abstraction
 
@@ -93,7 +93,7 @@ symatech-backend/
 
 ### Prerequisites
 - PHP 8.1+
-- MYSQL 8.0+
+- PGSQL 8.0+
 - Redis 6.0+
 - Composer
 - Node.js & NPM
@@ -136,16 +136,16 @@ Key environment variables in `.env`:
 
 ```bash
 # Application
-APP_NAME=Symatech
+APP_NAME=
 APP_ENV=local
 APP_DEBUG=false
 APP_URL=http://localhost:8000
 
 # Database
-DB_CONNECTION=mysql
+DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=symatech
+DB_PORT=5432
+DB_DATABASE=
 DB_USERNAME=your_username
 DB_PASSWORD=your_password
 
@@ -318,4 +318,4 @@ For project-related inquiries:
 
 ---
 
-**Note**: This project is a demonstration of full-stack development capabilities and follows industry best practices for security, performance, and maintainability. All sensitive configuration details are kept in environment files and excluded from version control.
+**Note**: This project  follows industry best practices for security, performance, and maintainability. All sensitive configuration details are kept in environment files and excluded from version control.
