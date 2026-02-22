@@ -12,12 +12,13 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxml2-dev \
     libzip-dev \
+    libgd-dev \
     zip \
     unzip \
     libpq-dev \
     libssl-dev \
     && docker-php-ext-configure pgsql --with-pgsql=/usr/local/pgsql \
-    && docker-php-ext-install pdo pdo_pgsql pgsql mbstring exif pcntl bcmath zip \
+    && docker-php-ext-install pdo pdo_pgsql pgsql mbstring exif pcntl bcmath zip gd \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -26,6 +27,9 @@ RUN pecl install redis && docker-php-ext-enable redis
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Copy composer files first to leverage Docker cache
+COPY composer.json composer.lock /var/www/html/
 
 # Copy existing application directory
 COPY . /var/www/html/
