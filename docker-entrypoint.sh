@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# Change to Laravel directory
+cd /var/www/html
+
+# Load Laravel environment variables
+if [ -f .env ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+    echo "Loaded environment variables from .env file"
+else
+    echo "Warning: .env file not found, using default environment variables"
+fi
+
 # Wait for PostgreSQL to be ready
 echo "Waiting for PostgreSQL to be ready..."
 DB_HOST=${DB_HOST:-symatech-db}
