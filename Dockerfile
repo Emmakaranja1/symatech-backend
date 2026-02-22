@@ -35,6 +35,10 @@ COPY composer.json composer.lock /var/www/html/
 # Copy existing application directory
 COPY . /var/www/html/
 
+# Copy and make entrypoint script executable
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage \
@@ -56,10 +60,6 @@ RUN php artisan storage:link
 RUN php artisan config:cache \
     && php artisan route:cache \
     && php artisan view:cache
-
-# Copy and make entrypoint script executable
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Expose port 80
 EXPOSE 80
