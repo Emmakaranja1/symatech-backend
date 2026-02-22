@@ -22,21 +22,26 @@ class HealthController extends Controller
             $checks['database'] = 'connected';
         } catch (\Exception $e) {
             $status = 'unhealthy';
-            $checks['database'] = 'disconnected';
+            $checks['database'] = 'disconnected: ' . $e->getMessage();
         }
 
-        // Redis health check
+        // Redis health check (optional)
         try {
-            Redis::ping();
-            $checks['redis'] = 'connected';
+            if (config('redis.default.host')) {
+                Redis::ping();
+                $checks['redis'] = 'connected';
+            } else {
+                $checks['redis'] = 'not configured';
+            }
         } catch (\Exception $e) {
-            $status = 'unhealthy';
-            $checks['redis'] = 'disconnected';
+            // Don't fail health check for Redis, just log it
+            $checks['redis'] = 'disconnected: ' . $e->getMessage();
         }
 
         // Application version
         $checks['app_version'] = config('app.version', '1.0.0');
         $checks['timestamp'] = now()->toISOString();
+        $checks['environment'] = config('app.env');
 
         return response()->json([
             'status' => $status,
