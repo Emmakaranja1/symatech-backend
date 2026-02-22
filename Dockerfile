@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     libpq-dev \
     libssl-dev \
+    netcat \
     && docker-php-ext-configure pgsql --with-pgsql=/usr/local/pgsql \
     && docker-php-ext-install pdo pdo_pgsql pgsql mbstring exif pcntl bcmath zip gd \
     && apt-get clean \
@@ -51,16 +52,14 @@ RUN php artisan key:generate --force
 # Create storage link
 RUN php artisan storage:link
 
-# Run database migrations
-RUN php artisan migrate --force
-
-# Run database seeders
-RUN php artisan db:seed --force
-
 # Optimize for production
 RUN php artisan config:cache \
     && php artisan route:cache \
     && php artisan view:cache
+
+# Copy and make entrypoint script executable
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Expose port 80
 EXPOSE 80
@@ -73,5 +72,5 @@ RUN a2enmod rewrite \
     && echo 'ServerName symatech-backend.onrender.com' >> /etc/apache2/apache2.conf \
     && echo '<IfModule mod_dir.c>\n    DirectoryIndex index.php index.html\n</IfModule>' >> /etc/apache2/apache2.conf
 
-# Start Apache server
-CMD ["apache2-foreground"]
+# Start with entrypoint script
+ENTRYPOINT ["docker-entrypoint.sh"]
