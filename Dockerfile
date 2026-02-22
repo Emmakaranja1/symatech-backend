@@ -64,7 +64,7 @@ RUN a2enmod rewrite \
     && sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf \
     && echo '<Directory /var/www/html>\nAllowOverride All\n</Directory>' >> /etc/apache2/apache2.conf \
     && echo 'ServerName symatech-backend.onrender.com' >> /etc/apache2/apache2.conf \
-    && echo '<IfModule mod_dir.c>\n    DirectoryIndex index.php index.html\n</IfModule>' >> /etc/apache2/apache2/apache2.conf
+    && echo '<IfModule mod_dir.c>\n    DirectoryIndex index.php index.html\n</IfModule>' >> /etc/apache2/apache2.conf
 
 # Start Apache server
 CMD ["apache2-foreground"]
