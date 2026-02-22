@@ -1,4 +1,4 @@
-# Symatech Backend API
+# Ecommerce Backend API
 
 A robust Laravel-based REST API demonstrating full-stack development capabilities with modern architectural patterns and best practices.
 
