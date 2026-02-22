@@ -16,7 +16,6 @@ services:
       - symatech-network
     depends_on:
       - postgres
-      - redis
     environment:
       - APP_NAME=Symatech
       - APP_ENV=production
@@ -28,12 +27,10 @@ services:
       - DB_DATABASE=symatech
       - DB_USERNAME=symatech_user
       - DB_PASSWORD=symatech_password
-      - CACHE_DRIVER=redis
-      - QUEUE_CONNECTION=redis
-      - SESSION_DRIVER=redis
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=null
+      - CACHE_DRIVER=file
+      - SESSION_DRIVER=file
+      - QUEUE_CONNECTION=sync
+      - FILESYSTEM_DISK=local
       - AUTH_SECRET_KEY=${AUTH_SECRET_KEY}
       - AUTH_TOKEN_TTL=1440
       - AUTH_REFRESH_TTL=10080
@@ -56,19 +53,6 @@ services:
       - "5432:5432"
     networks:
       - symatech-network
-
-  # Redis Cache
-  redis:
-    image: redis:7-alpine
-    container_name: symatech_redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - symatech-network
-    command: redis-server --appendonly yes
 
   # Nginx (Optional - for production)
   nginx:
@@ -94,6 +78,4 @@ networks:
 
 volumes:
   postgres_data:
-    driver: local
-  redis_data:
     driver: local

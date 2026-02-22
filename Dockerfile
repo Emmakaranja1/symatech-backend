@@ -17,7 +17,9 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     libssl-dev \
     && docker-php-ext-configure pgsql --with-pgsql=/usr/local/pgsql \
-    && docker-php-ext-install pdo pdo_pgsql pgsql mbstring exif pcntl bcmath zip
+    && docker-php-ext-install pdo pdo_pgsql pgsql mbstring exif pcntl bcmath zip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Redis extension
 RUN pecl install redis && docker-php-ext-enable redis
@@ -37,7 +39,7 @@ RUN chown -R www-data:www-data /var/www/html \
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Copy environment file (will be overridden by environment variables in production)
-RUN cp .env.example .env
+COPY .env .env
 
 # Generate application key
 RUN php artisan key:generate --force
