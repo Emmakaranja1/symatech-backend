@@ -27,8 +27,12 @@ echo "Trying to connect to database host: $DB_HOST"
 RENDER_DB_HOST=${DATABASE_URL:-${DB_HOST}}
 echo "Render database host: $RENDER_DB_HOST"
 
+# Try the actual Render database hostname
+ACTUAL_RENDER_HOST="dpg-d6dcgdvgi27c738fu6ag-a"
+echo "Trying actual Render database host: $ACTUAL_RENDER_HOST"
+
 # Try common database hosts
-for host in "$RENDER_DB_HOST" "$DB_HOST" "symatech-db" "pgsql" "postgres" "localhost"; do
+for host in "$ACTUAL_RENDER_HOST" "$RENDER_DB_HOST" "$DB_HOST" "symatech-db" "pgsql" "postgres" "localhost"; do
     echo "Attempting connection to $host:5432..."
     if nc -z $host 5432 2>/dev/null; then
         echo "Successfully connected to PostgreSQL at $host:5432"
