@@ -11,16 +11,29 @@ else
     echo "Warning: .env file not found, using default environment variables"
 fi
 
+# Debug: Show database configuration
+echo "Database configuration:"
+echo "  DB_CONNECTION: ${DB_CONNECTION:-not set}"
+echo "  DB_HOST: ${DB_HOST:-not set}"
+echo "  DB_PORT: ${DB_PORT:-not set}"
+echo "  DB_DATABASE: ${DB_DATABASE:-not set}"
+
 # Wait for PostgreSQL to be ready
 echo "Waiting for PostgreSQL to be ready..."
 DB_HOST=${DB_HOST:-symatech-db}
 echo "Trying to connect to database host: $DB_HOST"
 
+# For Render, try the Render database service name first
+RENDER_DB_HOST=${DATABASE_URL:-${DB_HOST}}
+echo "Render database host: $RENDER_DB_HOST"
+
 # Try common database hosts
-for host in "$DB_HOST" "symatech-db" "pgsql" "postgres" "localhost"; do
+for host in "$RENDER_DB_HOST" "$DB_HOST" "symatech-db" "pgsql" "postgres" "localhost"; do
     echo "Attempting connection to $host:5432..."
     if nc -z $host 5432 2>/dev/null; then
         echo "Successfully connected to PostgreSQL at $host:5432"
+        # Update DB_HOST for Laravel to use the working host
+        export DB_HOST=$host
         break
     fi
     if [ "$host" = "localhost" ]; then
