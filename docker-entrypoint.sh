@@ -39,6 +39,12 @@ for host in "$ACTUAL_RENDER_HOST" "$RENDER_DB_HOST" "$DB_HOST" "symatech-db" "pg
         # Update DB_HOST for Laravel to use the working host
         export DB_HOST=$host
         echo "Updated DB_HOST to: $DB_HOST"
+        
+        # Update .env file with correct database host
+        if [ -f .env ]; then
+            sed -i "s/DB_HOST=.*/DB_HOST=$host/" .env
+            echo "Updated .env file with DB_HOST=$host"
+        fi
         break
     fi
     if [ "$host" = "localhost" ]; then
