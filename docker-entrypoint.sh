@@ -38,6 +38,7 @@ for host in "$ACTUAL_RENDER_HOST" "$RENDER_DB_HOST" "$DB_HOST" "symatech-db" "pg
         echo "Successfully connected to PostgreSQL at $host:5432"
         # Update DB_HOST for Laravel to use the working host
         export DB_HOST=$host
+        echo "Updated DB_HOST to: $DB_HOST"
         break
     fi
     if [ "$host" = "localhost" ]; then
