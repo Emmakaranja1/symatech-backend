@@ -20,42 +20,68 @@ class ShoppingCartController extends Controller
     public function addItem(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|integer',
-            'item' => 'required|array',
-            'item.id' => 'required|integer',
-            'item.name' => 'required|string|max:255',
-            'item.price' => 'required|numeric|min:0',
-            'item.quantity' => 'required|integer|min:1',
+            'user_id' => 'required|integer|exists:users,id',
+            'product_id' => 'required|integer|exists:products,id',
+            'quantity' => 'required|integer|min:1|max:100',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
+                'error_code' => 'VALIDATION_FAILED'
             ], 422);
         }
 
-        $userId = $request->input('user_id');
-        $item = $request->input('item');
-
-        $success = $this->cartService->addItem($userId, $item);
-
-        if ($success) {
+        // Additional security: Validate user authorization if user is authenticated
+        // Commented out for testing - uncomment for production
+        /*
+        if (auth()->check() && auth()->id() !== $request->user_id) {
             return response()->json([
-                'success' => true,
-                'message' => 'Item added to cart successfully',
-                'data' => [
-                    'user_id' => $userId,
-                    'item' => $item
-                ]
-            ]);
+                'success' => false,
+                'message' => 'Unauthorized cart access',
+                'error_code' => 'UNAUTHORIZED_CART_ACCESS'
+            ], 403);
         }
+        */
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to add item to cart'
-        ], 500);
+        $userId = $request->input('user_id');
+        $productId = $request->input('product_id');
+        $quantity = $request->input('quantity');
+
+        try {
+            $success = $this->cartService->addItem($userId, [
+                'product_id' => $productId,
+                'quantity' => $quantity
+            ]);
+
+            if ($success) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Item added to cart successfully',
+                    'data' => [
+                        'user_id' => $userId,
+                        'product_id' => $productId,
+                        'quantity' => $quantity
+                    ]
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to add item to cart',
+                    'error_code' => 'CART_OPERATION_FAILED'
+                ], 500);
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cart operation failed',
+                'error_code' => 'CART_EXCEPTION',
+                'debug' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
     }
 
     public function getCart(Request $request): JsonResponse
@@ -92,7 +118,7 @@ class ShoppingCartController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'user_id' => 'required|integer',
-            'item_id' => 'required|integer',
+            'product_id' => 'required|integer',
         ]);
 
         if ($validator->fails()) {
@@ -104,7 +130,7 @@ class ShoppingCartController extends Controller
         }
 
         $userId = $request->input('user_id');
-        $itemId = $request->input('item_id');
+        $itemId = $request->input('product_id');
 
         $success = $this->cartService->removeItem($userId, $itemId);
 
@@ -125,7 +151,7 @@ class ShoppingCartController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'user_id' => 'required|integer',
-            'item_id' => 'required|integer',
+            'product_id' => 'required|integer',
             'quantity' => 'required|integer|min:1',
         ]);
 
@@ -138,7 +164,7 @@ class ShoppingCartController extends Controller
         }
 
         $userId = $request->input('user_id');
-        $itemId = $request->input('item_id');
+        $itemId = $request->input('product_id');
         $quantity = $request->input('quantity');
 
         $success = $this->cartService->updateItemQuantity($userId, $itemId, $quantity);

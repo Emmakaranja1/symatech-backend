@@ -18,21 +18,31 @@ yarn-error.log
 /.idea
 /.vscode
 
-# Documentation files - keep private
+# Documentation files - keep private (only README.md should be in git)
 docs/
+*.md
+!README.md
 SECURITY_RECOMMENDATIONS.md
 POSTMAN_TEST_GUIDE.md
 IMPLEMENTATION_SUMMARY.md
 API_DOCUMENTATION.md
+API_ENDPOINT_SUMMARY.md
+DEPLOYMENT.md
+JWT_IMPLEMENTATION_SUMMARY.md
+PROTECTED_ROUTES_TEST_RESULTS.md
+REDIS_CONFIGURATION_GUIDE.md
+REDIS_IMPLEMENTATION_SUMMARY.md
+REDIS_SETUP_GUIDE.md
 
 # Test scripts and temporary files - exclude from version control
+test/
 tests/scripts/
 tests/postman/
 tests/debug/
 *.sh
 test_*.sh
 *_test*.sh
-*_postman*.json
+*_postman*.sh
 *_diagnosis*.sh
 *_solution*.sh
 *_guide*.sh
@@ -54,6 +64,9 @@ temp_*.php
 flutterwave_postman_collection.json
 *_postman*.json
 *.postman_collection.json
+*.json
+!composer.json
+!package.json
 
 # Environment specific test files
 .env.test

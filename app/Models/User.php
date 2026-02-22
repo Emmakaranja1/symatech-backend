@@ -6,14 +6,13 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use App\Models\Order;
 
 class User extends Authenticatable implements JWTSubject
 {
-    use HasApiTokens, HasFactory, Notifiable, LogsActivity;
+    use HasFactory, Notifiable, LogsActivity;
 
     protected static $logAttributes = ['name', 'email', 'role', 'status'];
     protected static $logOnlyDirty = true;
@@ -62,7 +61,8 @@ class User extends Authenticatable implements JWTSubject
         'name',
         'email',
         'password',
-        'role'
+        'role',
+        'status'
     ];
 
     /**

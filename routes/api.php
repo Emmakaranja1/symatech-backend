@@ -2,14 +2,13 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\JWTAuthController;
-use App\Http\Controllers\JWTTestController;
+use App\Http\Controllers\Auth\JWTAuthController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReportingController;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\Redis\ShoppingCartController;
 use App\Http\Controllers\Redis\UserPreferencesController;
 use App\Http\Controllers\Redis\PaymentSessionController;
@@ -17,21 +16,14 @@ use App\Http\Controllers\Redis\RateLimitController;
 use App\Http\Controllers\Redis\RedisConnectionController;
 
 // Health check endpoint for deployment monitoring
-Route::get('/health', function () {
-    return response()->json([
-        'status' => 'ok',
-        'timestamp' => now(),
-        'version' => app()->version(),
-        'environment' => app()->environment()
-    ]);
-});
+Route::get('/health', [HealthController::class, 'index']);
 
 // Public routes
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [JWTAuthController::class, 'register']);
+Route::post('/login', [JWTAuthController::class, 'login']);
 
 // JWT Authentication routes
-Route::prefix('jwt')->group(function () {
+Route::prefix('auth')->group(function () {
     Route::post('/register', [JWTAuthController::class, 'register']);
     Route::post('/register-admin', [JWTAuthController::class, 'registerAdmin']);
     Route::post('/login', [JWTAuthController::class, 'login']);
@@ -41,23 +33,19 @@ Route::prefix('jwt')->group(function () {
         Route::get('/me', [JWTAuthController::class, 'me']);
         Route::post('/logout', [JWTAuthController::class, 'logout']);
         Route::post('/refresh', [JWTAuthController::class, 'refresh']);
+        Route::post('/change-password', [JWTAuthController::class, 'changePassword']);
     });
 });
 
 // Protected routes
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
-
+Route::middleware('jwt.auth')->group(function () {
     // ------------------- ADMIN ROUTES -------------------
     Route::middleware('role:admin')->group(function () {
         // User management
         Route::get('/admin/users', [UserController::class, 'index']);
         Route::patch('/admin/users/{id}/activate', [UserController::class, 'activate']);
         Route::patch('/admin/users/{id}/deactivate', [UserController::class, 'deactivate']);
-        Route::post('/admin/register', [AuthController::class, 'registerAdmin']);
+        Route::post('/admin/register', [JWTAuthController::class, 'registerAdmin']);
 
         // product management
         Route::post('/admin/products', [ProductController::class, 'store']);
@@ -117,51 +105,58 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/payments', [PaymentController::class, 'getUserPayments']);
     });
 
-    // Payment callback routes (public, but secured by validation)
-    Route::post('/callbacks/mpesa', [PaymentController::class, 'handleMpesaCallback']);
-    Route::post('/callbacks/flutterwave', [PaymentController::class, 'handleFlutterwaveCallback']);
+// Test public route
+Route::get('/test-public', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'Public route working',
+        'timestamp' => now()
+    ]);
+});
 
-    // Redis State Management Routes (Public for testing)
-    Route::prefix('redis')->group(function () {
-        // Shopping Cart Routes
-        Route::post('/cart/add', [ShoppingCartController::class, 'addItem']);
-        Route::get('/cart', [ShoppingCartController::class, 'getCart']);
-        Route::delete('/cart/item', [ShoppingCartController::class, 'removeItem']);
-        Route::put('/cart/quantity', [ShoppingCartController::class, 'updateQuantity']);
-        Route::delete('/cart', [ShoppingCartController::class, 'clearCart']);
-        Route::get('/cart/summary', [ShoppingCartController::class, 'getCartSummary']);
+// Payment callback routes (public, but secured by validation)
+Route::post('/callbacks/mpesa', [PaymentController::class, 'handleMpesaCallback']);
+Route::post('/callbacks/flutterwave', [PaymentController::class, 'handleFlutterwaveCallback']);
 
-        // User Preferences Routes
-        Route::post('/preferences/set', [UserPreferencesController::class, 'setPreference']);
-        Route::get('/preferences/get', [UserPreferencesController::class, 'getPreference']);
-        Route::get('/preferences/all', [UserPreferencesController::class, 'getAllPreferences']);
-        Route::delete('/preferences/remove', [UserPreferencesController::class, 'removePreference']);
-        Route::delete('/preferences/clear', [UserPreferencesController::class, 'clearAllPreferences']);
-        Route::post('/preferences/multiple', [UserPreferencesController::class, 'setMultiplePreferences']);
+// Redis State Management Routes (Public for testing)
+Route::prefix('redis')->group(function () {
+    // Shopping Cart Routes
+    Route::post('/cart/add', [ShoppingCartController::class, 'addItem']);
+    Route::get('/cart', [ShoppingCartController::class, 'getCart']);
+    Route::delete('/cart/item', [ShoppingCartController::class, 'removeItem']);
+    Route::put('/cart/quantity', [ShoppingCartController::class, 'updateQuantity']);
+    Route::delete('/cart', [ShoppingCartController::class, 'clearCart']);
+    Route::get('/cart/summary', [ShoppingCartController::class, 'getCartSummary']);
 
-        // Payment Session Routes
-        Route::post('/payment/session/create', [PaymentSessionController::class, 'createSession']);
-        Route::get('/payment/session', [PaymentSessionController::class, 'getSession']);
-        Route::put('/payment/session/update', [PaymentSessionController::class, 'updateSession']);
-        Route::delete('/payment/session', [PaymentSessionController::class, 'deleteSession']);
-        Route::put('/payment/session/extend', [PaymentSessionController::class, 'extendSession']);
-        Route::get('/payment/session/validity', [PaymentSessionController::class, 'checkSessionValidity']);
+    // User Preferences Routes
+    Route::post('/preferences/set', [UserPreferencesController::class, 'setPreference']);
+    Route::get('/preferences/get', [UserPreferencesController::class, 'getPreference']);
+    Route::get('/preferences/all', [UserPreferencesController::class, 'getAllPreferences']);
+    Route::delete('/preferences/remove', [UserPreferencesController::class, 'removePreference']);
+    Route::delete('/preferences/clear', [UserPreferencesController::class, 'clearAllPreferences']);
+    Route::post('/preferences/multiple', [UserPreferencesController::class, 'setMultiplePreferences']);
 
-        // Rate Limiting Routes
-        Route::post('/rate-limit/check', [RateLimitController::class, 'checkRateLimit']);
-        Route::delete('/rate-limit/clear', [RateLimitController::class, 'clearRateLimit']);
-        Route::get('/rate-limit/status', [RateLimitController::class, 'getRateLimitStatus']);
-        Route::post('/rate-limit/increment', [RateLimitController::class, 'incrementRateLimit']);
-        Route::post('/rate-limit/multiple', [RateLimitController::class, 'checkMultipleRateLimits']);
-        Route::get('/rate-limit/blocked', [RateLimitController::class, 'isBlocked']);
-        Route::get('/rate-limit/test', [RateLimitController::class, 'testRateLimiting']);
+    // Payment Session Routes
+    Route::post('/payment/session/create', [PaymentSessionController::class, 'createSession']);
+    Route::get('/payment/session', [PaymentSessionController::class, 'getSession']);
+    Route::put('/payment/session/update', [PaymentSessionController::class, 'updateSession']);
+    Route::delete('/payment/session', [PaymentSessionController::class, 'deleteSession']);
+    Route::put('/payment/session/extend', [PaymentSessionController::class, 'extendSession']);
+    Route::get('/payment/session/validity', [PaymentSessionController::class, 'checkSessionValidity']);
 
-        // Redis Connection Routes
-        Route::get('/connection/test', [RedisConnectionController::class, 'testConnection']);
-        Route::get('/connection/operations', [RedisConnectionController::class, 'testBasicOperations']);
-        Route::get('/connection/hash', [RedisConnectionController::class, 'testHashOperations']);
-        Route::get('/connection/info', [RedisConnectionController::class, 'getRedisInfo']);
-        Route::get('/connection/monitor', [RedisConnectionController::class, 'monitorConnection']);
-        Route::get('/connection/health', [RedisConnectionController::class, 'healthCheck']);
-    });
+    // Rate Limiting Routes
+    Route::post('/rate-limit/check', [RateLimitController::class, 'checkRateLimit']);
+    Route::delete('/rate-limit/clear', [RateLimitController::class, 'clearRateLimit']);
+    Route::get('/rate-limit/status', [RateLimitController::class, 'getRateLimitStatus']);
+    Route::get('/rate-limit/test', [RateLimitController::class, 'testRateLimiting']);
+    Route::get('/rate-limit/blocked', [RateLimitController::class, 'isBlocked']);
+
+    // Redis Connection Routes
+    Route::get('/connection/test', [RedisConnectionController::class, 'testConnection']);
+    Route::get('/connection/operations', [RedisConnectionController::class, 'testBasicOperations']);
+    Route::get('/connection/hash', [RedisConnectionController::class, 'testHashOperations']);
+    Route::get('/connection/info', [RedisConnectionController::class, 'getRedisInfo']);
+    Route::get('/connection/monitor', [RedisConnectionController::class, 'monitorConnection']);
+    Route::get('/connection/health', [RedisConnectionController::class, 'healthCheck']);
+});
 });

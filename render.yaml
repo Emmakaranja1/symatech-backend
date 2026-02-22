@@ -1,22 +1,14 @@
 services:
-  # Web Service
+  # Web Service (Docker)
   - type: web
     name: symatech-backend
-    env: php
+    env: docker
     plan: starter
-    runtime: php-8.2
-    buildCommand: |
-      composer install --no-dev --optimize-autoloader
-      cp .env.example .env
-      php artisan key:generate
-      php artisan storage:link
-      php artisan migrate --force
-      php artisan config:cache
-      php artisan route:cache
-      php artisan view:cache
-    startCommand: php artisan serve --host=0.0.0.0 --port=$PORT
+    dockerfilePath: ./Dockerfile
     healthCheckPath: /api/health
     autoDeploy: true
+    buildCommand: "php artisan migrate --force"
+    startCommand: "apache2-foreground"
     
     # Environment variables (these will be set in Render dashboard)
     envVars:
@@ -24,6 +16,8 @@ services:
         value: production
       - key: APP_DEBUG
         value: false
+      - key: APP_URL
+        value: https://symatech-backend.onrender.com
       - key: LOG_LEVEL
         value: error
       - key: CACHE_DRIVER
@@ -32,12 +26,40 @@ services:
         value: redis
       - key: QUEUE_CONNECTION
         value: redis
+      - key: REDIS_HOST
+        value: symatech-redis
+      - key: REDIS_PORT
+        value: 6379
+      # Database variables will be automatically set by Render
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+          name: symatech-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: symatech-db
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: symatech-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: symatech-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: symatech-db
+          property: password
 
   # Redis Service
   - type: redis
     name: symatech-redis
     plan: starter
     ipAllowList: [] # Only accessible from within the same region
+    maxMemoryPolicy: allkeys-lru
 
 # PostgreSQL Database (using Render's managed PostgreSQL)
 databases:
@@ -45,3 +67,5 @@ databases:
     plan: starter
     databaseName: symatech
     user: symatech_user
+    isPostgrestEnabled: false
+    isReadReplicaEnabled: false

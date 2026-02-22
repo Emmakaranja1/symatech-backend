@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  # Laravel Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: symatech_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./storage:/var/www/html/storage
+    networks:
+      - symatech-network
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - APP_NAME=Symatech
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_URL=http://localhost:8000
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=symatech
+      - DB_USERNAME=symatech_user
+      - DB_PASSWORD=symatech_password
+      - CACHE_DRIVER=redis
+      - QUEUE_CONNECTION=redis
+      - SESSION_DRIVER=redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=null
+      - AUTH_SECRET_KEY=${AUTH_SECRET_KEY}
+      - AUTH_TOKEN_TTL=1440
+      - AUTH_REFRESH_TTL=10080
+      - AUTH_ALGORITHM=HS256
+
+  # PostgreSQL Database (Recommended)
+  postgres:
+    image: postgres:15-alpine
+    container_name: symatech_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: symatech
+      POSTGRES_USER: symatech_user
+      POSTGRES_PASSWORD: symatech_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - symatech-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: symatech_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - symatech-network
+    command: redis-server --appendonly yes
+
+  # Nginx (Optional - for production)
+  nginx:
+    image: nginx:alpine
+    container_name: symatech_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./:/var/www/html
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/sites/:/etc/nginx/sites-available/
+      - ./nginx/ssl/:/etc/nginx/ssl/
+    depends_on:
+      - app
+    networks:
+      - symatech-network
+
+networks:
+  symatech-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

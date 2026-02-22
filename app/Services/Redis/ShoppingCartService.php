@@ -14,7 +14,7 @@ class ShoppingCartService
     {
         try {
             $cartKey = self::CART_PREFIX . $userId;
-            $itemId = $item['id'];
+            $itemId = $item['product_id']; // Use product_id field
             $itemData = json_encode($item);
 
             Redis::hset($cartKey, $itemId, $itemData);

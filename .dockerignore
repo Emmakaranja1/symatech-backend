@@ -1,0 +1,56 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+docs/
+README.md
+*.md
+
+# Development files
+.env
+.env.local
+.env.*.local
+.phpunit.result.cache
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Laravel specific
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/framework/testing/*
+
+# Test files
+test/
+tests/
+*.sh
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Composer
+vendor/
+composer.lock
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build artifacts
+public/build
+public/hot
+
+# Temporary files
+*.tmp
+*.temp

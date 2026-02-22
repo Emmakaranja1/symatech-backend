@@ -120,14 +120,21 @@ return [
     */
 
     'redis' => [
-
         'client' => env('REDIS_CLIENT', 'predis'),
-
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
             'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_database_'),
+            'read_timeout' => 60,
+            'write_timeout' => 60,
+            'context' => [
+                'tcp_nodelay' => true,
+                'tcp_keepalive' => 1,
+            ],
+            'parameters' => [
+                'tcp_keepalive' => 60,
+                'tcp_keepidle' => 60,
+            ],
         ],
-
         'default' => [
             'url' => env('REDIS_URL'),
             'host' => env('REDIS_HOST', '127.0.0.1'),
@@ -135,8 +142,20 @@ return [
             'password' => env('REDIS_PASSWORD'),
             'port' => env('REDIS_PORT', '6379'),
             'database' => env('REDIS_DB', '0'),
+            'persistent' => env('REDIS_PERSISTENT', true),
+            'read_timeout' => 60,
+            'write_timeout' => 60,
+            'context' => [
+                'tcp_nodelay' => true,
+                'tcp_keepalive' => 1,
+            ],
+            'parameters' => [
+                'tcp_keepalive' => 60,
+                'tcp_keepidle' => 60,
+                'maxmemory_policy' => env('REDIS_MAXMEMORY_POLICY', 'allkeys-lru'),
+                'timeout' => 5.0,
+            ],
         ],
-
         'cache' => [
             'url' => env('REDIS_URL'),
             'host' => env('REDIS_HOST', '127.0.0.1'),
