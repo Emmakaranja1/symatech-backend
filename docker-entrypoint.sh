@@ -43,7 +43,13 @@ for host in "$ACTUAL_RENDER_HOST" "$RENDER_DB_HOST" "$DB_HOST" "symatech-db" "pg
         # Update .env file with correct database host
         if [ -f .env ]; then
             sed -i "s/DB_HOST=.*/DB_HOST=$host/" .env
-            echo "Updated .env file with DB_HOST=$host"
+            sed -i "s/APP_DEBUG=.*/APP_DEBUG=true/" .env
+            echo "Updated .env file with DB_HOST=$host and enabled debug"
+            
+            # Clear Laravel cache to reload configuration
+            php artisan config:clear
+            php artisan cache:clear
+            echo "Cleared Laravel configuration cache"
         fi
         break
     fi
