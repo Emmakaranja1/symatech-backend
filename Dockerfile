@@ -51,6 +51,12 @@ RUN php artisan key:generate --force
 # Create storage link
 RUN php artisan storage:link
 
+# Run database migrations
+RUN php artisan migrate --force
+
+# Run database seeders
+RUN php artisan db:seed --force
+
 # Optimize for production
 RUN php artisan config:cache \
     && php artisan route:cache \
