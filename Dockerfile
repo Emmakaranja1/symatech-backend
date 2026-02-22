@@ -36,6 +36,7 @@ COPY composer.json composer.lock /var/www/html/
 COPY . /var/www/html/
 
 # Copy and make entrypoint script executable
+# Cache bust: 2025-02-22-18-40
 COPY ./docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
