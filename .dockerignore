@@ -7,8 +7,7 @@ docs/
 README.md
 *.md
 
-# Development files
-.env
+# Development files (but allow .env for Docker build)
 .env.local
 .env.*.local
 .phpunit.result.cache
