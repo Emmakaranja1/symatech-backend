@@ -36,7 +36,7 @@ COPY composer.json composer.lock /var/www/html/
 COPY . /var/www/html/
 
 # Copy and make entrypoint script executable
-COPY docker-entrypoint.sh /usr/local/bin/
+COPY ./docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Set permissions
