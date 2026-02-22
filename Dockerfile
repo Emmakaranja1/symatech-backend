@@ -35,10 +35,16 @@ COPY composer.json composer.lock /var/www/html/
 # Copy existing application directory
 COPY . /var/www/html/
 
-# Copy and make entrypoint script executable
-# Cache bust: 2025-02-22-18-40
-COPY ./docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+# Expose port 80
+EXPOSE 80
+
+# Configure Apache for Laravel
+RUN a2enmod rewrite \
+    && sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf \
+     && sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|g' /etc/apache2/sites-available/000-default.conf \
+    && echo '<Directory /var/www/html/public>\nAllowOverride All\nRequire all granted\n</Directory>' >> /etc/apache2/apache2.conf \
+    && echo 'ServerName symatech-backend.onrender.com' >> /etc/apache2/apache2.conf \
+    && echo '<IfModule mod_dir.c>\n    DirectoryIndex index.php index.html\n</IfModule>' >> /etc/apache2/apache2.conf
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html \
@@ -61,17 +67,3 @@ RUN php artisan storage:link
 RUN php artisan config:cache \
     && php artisan route:cache \
     && php artisan view:cache
-
-# Expose port 80
-EXPOSE 80
-
-# Configure Apache for Laravel
-RUN a2enmod rewrite \
-    && sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf \
-     && sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|g' /etc/apache2/sites-available/000-default.conf \
-    && echo '<Directory /var/www/html/public>\nAllowOverride All\nRequire all granted\n</Directory>' >> /etc/apache2/apache2.conf \
-    && echo 'ServerName symatech-backend.onrender.com' >> /etc/apache2/apache2.conf \
-    && echo '<IfModule mod_dir.c>\n    DirectoryIndex index.php index.html\n</IfModule>' >> /etc/apache2/apache2.conf
-
-# Start with entrypoint script
-ENTRYPOINT ["docker-entrypoint.sh"]
