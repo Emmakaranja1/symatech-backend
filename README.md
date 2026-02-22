@@ -1,6 +1,6 @@
-# Ecommerce Backend API
+# E-commerce Backend API
 
-A robust Laravel-based REST API demonstrating full-stack development capabilities with modern architectural patterns and best practices.
+A production-ready Laravel-based REST API for e-commerce applications, demonstrating full-stack development capabilities with modern architectural patterns and best practices.
 
 ## 🏗️ Architecture Overview
 
@@ -32,13 +32,16 @@ This project implements a **clean architecture pattern** with separation of conc
 ## 🚀 Key Features
 
 ### Core Functionality
-- **User Management**: Registration, authentication, and profile management
-- **Role Management**: Hierarchical permission system
-- **Product Catalog**: Product information management
-- **Order Processing**: Complete order lifecycle management
+- **User Management**: Customer registration, authentication, and profile management
+- **Product Catalog**: Product information, categories, and inventory management
+- **Shopping Cart**: Persistent cart with Redis-based session management
+- **Order Processing**: Complete order lifecycle from cart to fulfillment
 - **Payment Integration**: Secure payment processing capabilities
+- **Inventory Management**: Stock tracking and automated updates
+- **Customer Service**: Order tracking and support features
+- **Analytics & Reporting**: Sales data and business insights
 - **State Management**: Efficient session and temporary data handling
-- **Reporting System**: Data export and analytics capabilities
+- **Admin Dashboard**: Administrative interface for store management
 
 ### Performance & Security Features
 - **Input Validation**: Comprehensive request sanitization
@@ -53,16 +56,34 @@ This project implements a **clean architecture pattern** with separation of conc
 symatech-backend/
 ├── app/
 │   ├── Http/
-│   │   ├── Controllers/         # API endpoint handlers
-│   │   └── Middleware/          # Custom middleware components
-│   ├── Services/                # Business logic layer
-│   └── Exports/                 # Data export functionality
+│   │   ├── Controllers/
+│   │   │   ├── Auth/              # Authentication controllers
+│   │   │   ├── Products/          # Product management controllers
+│   │   │   ├── Orders/            # Order processing controllers
+│   │   │   ├── Payments/          # Payment processing controllers
+│   │   │   ├── Cart/              # Shopping cart controllers
+│   │   │   └── Admin/             # Admin panel controllers
+│   │   └── Middleware/           # Custom middleware components
+│   ├── Services/                 # Business logic layer
+│   │   ├── Cart/                # Shopping cart services
+│   │   ├── Payment/             # Payment processing services
+│   │   ├── Order/               # Order management services
+│   │   └── Product/             # Product catalog services
+│   └── Models/                  # Eloquent models
+│       ├── User.php              # Customer model
+│       ├── Product.php           # Product model
+│       ├── Order.php             # Order model
+│       ├── Cart.php              # Shopping cart model
+│       └── Payment.php          # Payment model
 ├── config/                      # Application configuration
 ├── database/
 │   ├── migrations/              # Database schema definitions
 │   ├── seeders/                # Initial data population
 │   └── factories/              # Test data generation
 ├── routes/                      # API route definitions
+│   ├── api.php                 # Main API routes
+│   ├── admin.php                # Admin panel routes
+│   └── cart.php                # Cart-specific routes
 ├── storage/                     # Application storage
 ├── tests/                       # Test suites
 └── docs/                        # Additional documentation (local only)
@@ -75,14 +96,14 @@ symatech-backend/
 - **PHP 8.x**: Latest PHP version with performance improvements
 
 ### Database & Caching
-- **PGSQL 8.0**: Reliable relational database
-- **Redis**: High-performance caching and session storage
-- **Eloquent ORM**: Efficient database abstraction
+- **PostgreSQL 8.0**: Reliable relational database for e-commerce data
+- **Redis**: High-performance caching for shopping cart and session storage
+- **Eloquent ORM**: Efficient database abstraction with relationships
 
 ### Authentication & Security
 - **Industry-standard Authentication**: Secure token-based implementation
 - **Encryption**: BCrypt password hashing
-- **Validation**: Comprehensive input sanitization
+- **Validation**: Comprehensive input sanitization for e-commerce data
 
 ### Development Tools
 - **PHPUnit**: Comprehensive testing framework
@@ -157,49 +178,115 @@ SESSION_DRIVER=redis
 
 ## 📚 API Documentation
 
+### Overview
+This e-commerce API provides secure endpoints for product management, shopping cart operations, order processing, and customer authentication. All endpoints require proper authentication and follow RESTful principles.
+
 ### Authentication Endpoints
 
-#### User Registration
+#### Customer Registration
 ```http
 POST /api/auth/register
 Content-Type: application/json
 
 {
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "password",
-  "password_confirmation": "password"
+  "name": "Customer Name",
+  "email": "customer@example.com", 
+  "password": "secure_password",
+  "password_confirmation": "secure_password"
 }
 ```
 
-#### User Login
+#### Customer Login
 ```http
 POST /api/auth/login
 Content-Type: application/json
 
 {
-  "email": "john@example.com",
-  "password": "password"
+  "email": "customer@example.com",
+  "password": "secure_password"
 }
 ```
 
-### Resource Management Endpoints
+### Product Management Endpoints
 
-#### Get Resources
+#### Get Products Catalog
 ```http
-GET /api/resources
-Authorization: Bearer <token>
+GET /api/products
+Authorization: Bearer <auth_token>
 ```
 
-#### Create Resource
+#### Get Product Details
 ```http
-POST /api/resources
-Authorization: Bearer <token>
+GET /api/products/{product_id}
+Authorization: Bearer <auth_token>
+```
+
+### Shopping Cart Endpoints
+
+#### Add Item to Cart
+```http
+POST /api/cart/add
+Authorization: Bearer <auth_token>
 Content-Type: application/json
 
 {
-  "name": "Resource Name",
-  "description": "Resource Description"
+  "product_id": 123,
+  "quantity": 1
+}
+```
+
+#### View Cart Contents
+```http
+GET /api/cart
+Authorization: Bearer <auth_token>
+```
+
+### Order Management Endpoints
+
+#### Create Order
+```http
+POST /api/orders
+Authorization: Bearer <auth_token>
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "product_id": 123,
+      "quantity": 1
+    }
+  ],
+  "shipping_address": {
+    "street": "Shipping Address",
+    "city": "City", 
+    "country": "Country"
+  }
+}
+```
+
+#### Get Order History
+```http
+GET /api/orders
+Authorization: Bearer <auth_token>
+```
+
+### Response Format
+All API responses follow consistent format:
+```json
+{
+  "success": true,
+  "data": {},
+  "message": "Operation completed successfully"
+}
+```
+
+### Error Handling
+Error responses include appropriate HTTP status codes:
+```json
+{
+  "success": false,
+  "error": "Error description",
+  "code": "ERROR_CODE"
 }
 ```
 
@@ -300,14 +387,19 @@ php artisan test --coverage
 
 ## 📄 Project Information
 
-This project demonstrates proficiency in:
-- **Backend Development**: Laravel framework expertise
-- **Database Design**: Relational database architecture
+This e-commerce backend API demonstrates proficiency in:
+- **E-commerce Development**: Complete online store backend architecture
+- **Product Management**: Catalog, inventory, and category systems
+- **Shopping Cart Logic**: Persistent cart with Redis optimization
+- **Order Processing**: Full order lifecycle management
+- **Payment Integration**: Secure payment gateway integration
+- **Database Design**: Relational database for e-commerce data
 - **API Development**: RESTful API design patterns
 - **Security Implementation**: Industry-standard security practices
 - **Performance Optimization**: Caching and optimization strategies
 - **Testing**: Comprehensive testing methodologies
 - **Documentation**: Professional documentation practices
+- **Deployment**: Docker containerization and cloud deployment
 
 ## 📞 Support
 
@@ -318,4 +410,4 @@ For project-related inquiries:
 
 ---
 
-**Note**: This project  follows industry best practices for security, performance, and maintainability. All sensitive configuration details are kept in environment files and excluded from version control.
+**Note**: This e-commerce backend API follows industry best practices for security, performance, and maintainability. All sensitive configuration details are kept in environment files and excluded from version control. The project demonstrates comprehensive e-commerce functionality including product catalog, shopping cart, order processing, and payment integration suitable for production deployment.
