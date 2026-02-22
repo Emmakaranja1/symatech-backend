@@ -3,8 +3,19 @@
 # Wait for PostgreSQL to be ready
 echo "Waiting for PostgreSQL to be ready..."
 DB_HOST=${DB_HOST:-symatech-db}
-while ! nc -z $DB_HOST 5432; do
-  sleep 1
+echo "Trying to connect to database host: $DB_HOST"
+
+# Try common database hosts
+for host in "$DB_HOST" "symatech-db" "pgsql" "postgres" "localhost"; do
+    echo "Attempting connection to $host:5432..."
+    if nc -z $host 5432 2>/dev/null; then
+        echo "Successfully connected to PostgreSQL at $host:5432"
+        break
+    fi
+    if [ "$host" = "localhost" ]; then
+        echo "Could not connect to any database host, exiting..."
+        exit 1
+    fi
 done
 echo "PostgreSQL is ready!"
 
