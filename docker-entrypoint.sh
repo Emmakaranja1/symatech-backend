@@ -44,7 +44,9 @@ for host in "$ACTUAL_RENDER_HOST" "$RENDER_DB_HOST" "$DB_HOST" "symatech-db" "pg
         if [ -f .env ]; then
             sed -i "s/DB_HOST=.*/DB_HOST=$host/" .env
             sed -i "s/APP_DEBUG=.*/APP_DEBUG=true/" .env
-            echo "Updated .env file with DB_HOST=$host and enabled debug"
+            sed -i "s/DB_USERNAME=.*/DB_USERNAME=symatech_user/" .env
+            sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=oLEeBggKN3fQi8YqXtPFWGPgEANsO3sm/" .env
+            echo "Updated .env file with DB_HOST=$host, correct credentials and enabled debug"
             
             # Clear Laravel cache to reload configuration
             php artisan config:clear
