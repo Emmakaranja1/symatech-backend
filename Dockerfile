@@ -62,7 +62,9 @@ EXPOSE 80
 # Configure Apache for Laravel
 RUN a2enmod rewrite \
     && sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf \
-    && echo '<Directory /var/www/html>\nAllowOverride All\n</Directory>' >> /etc/apache2/apache2.conf
+    && echo '<Directory /var/www/html>\nAllowOverride All\n</Directory>' >> /etc/apache2/apache2.conf \
+    && echo 'ServerName symatech-backend.onrender.com' >> /etc/apache2/apache2.conf \
+    && sed -i 's/DirectoryIndex index.html/DirectoryIndex index.php index.html/g' /etc/apache2/mods-available/dir.conf
 
 # Start Apache server
 CMD ["apache2-foreground"]
