@@ -2,13 +2,14 @@ services:
   # Web Service (Docker)
   - type: web
     name: symatech-backend
-    env: docker
+    runtime: docker
     plan: starter
-    dockerfilePath: ./Dockerfile.render.simple
     healthCheckPath: /api/health
     autoDeploy: true
-    buildCommand: "php artisan migrate --force && php artisan db:seed --force"
-    startCommand: "apache2-foreground"
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerBuildCommand: "docker build -t symatech-backend ."
+    dockerStartCommand: "apache2-foreground"
     
     # Environment variables (these will be set in Render dashboard)
     envVars:
@@ -23,11 +24,11 @@ services:
       - key: LOG_CHANNEL
         value: stack
       - key: CACHE_DRIVER
-        value: array
+        value: redis
       - key: SESSION_DRIVER
-        value: file
+        value: redis
       - key: QUEUE_CONNECTION
-        value: sync
+        value: redis
       - key: FILESYSTEM_DISK
         value: local
       - key: AUTH_SECRET_KEY
@@ -40,6 +41,24 @@ services:
         value: HS256
       - key: RUN_SEEDERS
         value: true
+      - key: WAIT_FOR_DB
+        value: true
+      # Redis configuration (using Render's managed Redis)
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: symatech-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: redis
+          name: symatech-redis
+          property: port
+      - key: REDIS_PASSWORD
+        fromService:
+          type: redis
+          name: symatech-redis
+          property: password
       # Database variables will be automatically set by Render
       - key: DB_CONNECTION
         value: pgsql
@@ -74,3 +93,10 @@ databases:
     user: symatech_user
     isPostgrestEnabled: false
     isReadReplicaEnabled: false
+
+  # Redis Cache (using Render's managed Redis)
+services:
+  - type: redis
+    name: symatech-redis
+    plan: starter
+    ipAllowList: []

@@ -6,20 +6,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: symatech_app
-    restart: unless-stopped
-    working_dir: /var/www/html
-    volumes:
-      - ./:/var/www/html
-      - ./storage:/var/www/html/storage
-    networks:
-      - symatech-network
-    depends_on:
-      - postgres
+    container_name: symatech-app
+    ports:
+      - "8000:80"
     environment:
-      - APP_NAME=Symatech
-      - APP_ENV=production
-      - APP_DEBUG=false
+      - APP_ENV=local
+      - APP_DEBUG=true
       - APP_URL=http://localhost:8000
       - DB_CONNECTION=pgsql
       - DB_HOST=postgres
@@ -27,55 +19,108 @@ services:
       - DB_DATABASE=symatech
       - DB_USERNAME=symatech_user
       - DB_PASSWORD=symatech_password
-      - CACHE_DRIVER=file
-      - SESSION_DRIVER=file
-      - QUEUE_CONNECTION=sync
-      - FILESYSTEM_DISK=local
-      - AUTH_SECRET_KEY=${AUTH_SECRET_KEY}
-      - AUTH_TOKEN_TTL=1440
-      - AUTH_REFRESH_TTL=10080
-      - AUTH_ALGORITHM=HS256
+      - DB_SSLMODE=disable
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=redis
+      - QUEUE_CONNECTION=redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=null
+      - WAIT_FOR_DB=true
+      - RUN_SEEDERS=false
+    volumes:
+      - .:/var/www/html
+      - ./storage:/var/www/html/storage
+      - ./bootstrap/cache:/var/www/html/bootstrap/cache
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - symatech-network
+    restart: unless-stopped
 
-  # PostgreSQL Database (Recommended)
+  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: symatech_postgres
-    restart: unless-stopped
+    container_name: symatech-postgres
     environment:
-      POSTGRES_DB: symatech
-      POSTGRES_USER: symatech_user
-      POSTGRES_PASSWORD: symatech_password
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+      - POSTGRES_DB=symatech
+      - POSTGRES_USER=symatech_user
+      - POSTGRES_PASSWORD=symatech_password
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    ports:
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
-    ports:
-      - "5432:5432"
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - symatech-network
-
-  # Nginx (Optional - for production)
-  nginx:
-    image: nginx:alpine
-    container_name: symatech_nginx
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U symatech_user -d symatech"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: symatech-redis
     ports:
-      - "80:80"
-      - "443:443"
+      - "6380:6379"
     volumes:
-      - ./:/var/www/html
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/sites/:/etc/nginx/sites-available/
-      - ./nginx/ssl/:/etc/nginx/ssl/
-    depends_on:
-      - app
+      - redis_data:/data
     networks:
       - symatech-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
 
-networks:
-  symatech-network:
-    driver: bridge
+  # Redis Commander (Optional - for Redis management)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: symatech-redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    depends_on:
+      - redis
+    networks:
+      - symatech-network
+    restart: unless-stopped
+    profiles:
+      - tools
+
+  # PgAdmin (Optional - for PostgreSQL management)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: symatech-pgadmin
+    ports:
+      - "8080:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@symatech.com
+      - PGADMIN_DEFAULT_PASSWORD=admin123
+      - PGADMIN_CONFIG_SERVER_MODE=False
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - symatech-network
+    restart: unless-stopped
+    profiles:
+      - tools
 
 volumes:
   postgres_data:
     driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  symatech-network:
+    driver: bridge
