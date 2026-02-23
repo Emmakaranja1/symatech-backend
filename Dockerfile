@@ -98,7 +98,7 @@ RUN echo '#!/bin/bash' > /usr/local/bin/startup.sh \
     && echo 'if [ "$APP_ENV" = "production" ]; then' >> /usr/local/bin/startup.sh \
     && echo '    echo "Waiting for database to be ready..."' >> /usr/local/bin/startup.sh \
     && echo '    for i in {1..30}; do' >> /usr/local/bin/startup.sh \
-    && echo '        if php artisan db:show --quiet 2>/dev/null; then' >> /usr/local/bin/startup.sh \
+    && echo '        if pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USERNAME" >/dev/null 2>&1; then' >> /usr/local/bin/startup.sh \
     && echo '            echo "Database is ready!"' >> /usr/local/bin/startup.sh \
     && echo '            break' >> /usr/local/bin/startup.sh \
     && echo '        fi' >> /usr/local/bin/startup.sh \
