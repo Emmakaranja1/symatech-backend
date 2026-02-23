@@ -73,8 +73,9 @@ RUN echo '#!/bin/bash' > /usr/local/bin/startup.sh \
     && echo '' >> /usr/local/bin/startup.sh \
     && echo '# Create .env file if it does not exist' >> /usr/local/bin/startup.sh \
     && echo 'if [ ! -f "/var/www/html/.env" ]; then' >> /usr/local/bin/startup.sh \
-    && echo '    echo "Creating .env file from environment variables..."' >> /usr/local/bin/startup.sh \
-    && echo '    cp /var/www/html/.env.example /var/www/html/.env' >> /usr/local/bin/startup.sh \
+    && echo '    echo "Creating minimal .env file..."' >> /usr/local/bin/startup.sh \
+    && echo '    echo "APP_NAME=Laravel" > /var/www/html/.env' >> /usr/local/bin/startup.sh \
+    && echo '    echo "APP_DEBUG=false" >> /var/www/html/.env' >> /usr/local/bin/startup.sh \
     && echo 'fi' >> /usr/local/bin/startup.sh \
     && echo '' >> /usr/local/bin/startup.sh \
     && echo 'if [ -z "$APP_KEY" ]; then' >> /usr/local/bin/startup.sh \
