@@ -58,7 +58,7 @@ COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
 RUN a2enmod rewrite headers
 
 # Copy entrypoint script
-COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Expose port 80
