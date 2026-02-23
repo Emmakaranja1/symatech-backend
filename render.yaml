@@ -20,6 +20,8 @@ services:
         value: https://symatech-backend.onrender.com
       - key: LOG_LEVEL
         value: error
+      - key: LOG_CHANNEL
+        value: stack
       - key: CACHE_DRIVER
         value: array
       - key: SESSION_DRIVER
