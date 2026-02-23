@@ -10,6 +10,7 @@ README.md
 # Development files (but allow .env for Docker build)
 .env.local
 .env.*.local
+.env
 .phpunit.result.cache
 node_modules/
 npm-debug.log
@@ -51,3 +52,8 @@ public/hot
 # Temporary files
 *.tmp
 *.temp
+
+# Docker files (exclude from build context)
+docker-compose.yml
+Dockerfile
+docker-entrypoint.sh.render
