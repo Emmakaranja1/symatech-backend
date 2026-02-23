@@ -65,8 +65,56 @@ RUN chown -R www-data:www-data /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache \
     && chmod -R 755 /var/www/html/public
 
+# Create startup script
+RUN echo '#!/bin/bash' > /usr/local/bin/startup.sh \
+    && echo 'set -e' >> /usr/local/bin/startup.sh \
+    && echo '' >> /usr/local/bin/startup.sh \
+    && echo 'echo "Starting Laravel application setup..."' >> /usr/local/bin/startup.sh \
+    && echo '' >> /usr/local/bin/startup.sh \
+    && echo 'if [ -z "$APP_KEY" ]; then' >> /usr/local/bin/startup.sh \
+    && echo '    echo "Generating application key..."' >> /usr/local/bin/startup.sh \
+    && echo '    php artisan key:generate --force' >> /usr/local/bin/startup.sh \
+    && echo 'fi' >> /usr/local/bin/startup.sh \
+    && echo '' >> /usr/local/bin/startup.sh \
+    && echo 'echo "Clearing caches..."' >> /usr/local/bin/startup.sh \
+    && echo 'php artisan config:clear' >> /usr/local/bin/startup.sh \
+    && echo 'php artisan route:clear' >> /usr/local/bin/startup.sh \
+    && echo 'php artisan view:clear' >> /usr/local/bin/startup.sh \
+    && echo 'php artisan cache:clear' >> /usr/local/bin/startup.sh \
+    && echo '' >> /usr/local/bin/startup.sh \
+    && echo 'if [ "$APP_ENV" = "production" ]; then' >> /usr/local/bin/startup.sh \
+    && echo '    echo "Optimizing for production..."' >> /usr/local/bin/startup.sh \
+    && echo '    php artisan config:cache' >> /usr/local/bin/startup.sh \
+    && echo '    php artisan route:cache' >> /usr/local/bin/startup.sh \
+    && echo '    php artisan view:cache' >> /usr/local/bin/startup.sh \
+    && echo 'fi' >> /usr/local/bin/startup.sh \
+    && echo '' >> /usr/local/bin/startup.sh \
+    && echo 'if [ "$APP_ENV" = "production" ]; then' >> /usr/local/bin/startup.sh \
+    && echo '    echo "Waiting for database to be ready..."' >> /usr/local/bin/startup.sh \
+    && echo '    for i in {1..30}; do' >> /usr/local/bin/startup.sh \
+    && echo '        if php artisan db:show --quiet 2>/dev/null; then' >> /usr/local/bin/startup.sh \
+    && echo '            echo "Database is ready!"' >> /usr/local/bin/startup.sh \
+    && echo '            break' >> /usr/local/bin/startup.sh \
+    && echo '        fi' >> /usr/local/bin/startup.sh \
+    && echo '        echo "Waiting for database... ($i/30)"' >> /usr/local/bin/startup.sh \
+    && echo '        sleep 2' >> /usr/local/bin/startup.sh \
+    && echo '    done' >> /usr/local/bin/startup.sh \
+    && echo 'fi' >> /usr/local/bin/startup.sh \
+    && echo '' >> /usr/local/bin/startup.sh \
+    && echo 'echo "Running database migrations..."' >> /usr/local/bin/startup.sh \
+    && echo 'php artisan migrate --force' >> /usr/local/bin/startup.sh \
+    && echo '' >> /usr/local/bin/startup.sh \
+    && echo 'if [ "$RUN_SEEDERS" = "true" ]; then' >> /usr/local/bin/startup.sh \
+    && echo '    echo "Running database seeders..."' >> /usr/local/bin/startup.sh \
+    && echo '    php artisan db:seed --force' >> /usr/local/bin/startup.sh \
+    && echo 'fi' >> /usr/local/bin/startup.sh \
+    && echo '' >> /usr/local/bin/startup.sh \
+    && echo 'echo "Laravel setup complete. Starting Apache..."' >> /usr/local/bin/startup.sh \
+    && echo 'exec apache2-foreground' >> /usr/local/bin/startup.sh \
+    && chmod +x /usr/local/bin/startup.sh
+
 # Expose port 80
 EXPOSE 80
 
 # Default command
-CMD ["apache2-foreground"]
+CMD ["/usr/local/bin/startup.sh"]
