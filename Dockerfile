@@ -95,18 +95,6 @@ RUN echo '#!/bin/bash' > /usr/local/bin/startup.sh \
     && echo '    php artisan view:cache' >> /usr/local/bin/startup.sh \
     && echo 'fi' >> /usr/local/bin/startup.sh \
     && echo '' >> /usr/local/bin/startup.sh \
-    && echo 'if [ "$APP_ENV" = "production" ]; then' >> /usr/local/bin/startup.sh \
-    && echo '    echo "Waiting for database to be ready..."' >> /usr/local/bin/startup.sh \
-    && echo '    for i in {1..30}; do' >> /usr/local/bin/startup.sh \
-    && echo '        if pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USERNAME" >/dev/null 2>&1; then' >> /usr/local/bin/startup.sh \
-    && echo '            echo "Database is ready!"' >> /usr/local/bin/startup.sh \
-    && echo '            break' >> /usr/local/bin/startup.sh \
-    && echo '        fi' >> /usr/local/bin/startup.sh \
-    && echo '        echo "Waiting for database... ($i/30)"' >> /usr/local/bin/startup.sh \
-    && echo '        sleep 2' >> /usr/local/bin/startup.sh \
-    && echo '    done' >> /usr/local/bin/startup.sh \
-    && echo 'fi' >> /usr/local/bin/startup.sh \
-    && echo '' >> /usr/local/bin/startup.sh \
     && echo 'echo "Running database migrations..."' >> /usr/local/bin/startup.sh \
     && echo 'php artisan migrate --force' >> /usr/local/bin/startup.sh \
     && echo '' >> /usr/local/bin/startup.sh \
