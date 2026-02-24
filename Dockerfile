@@ -4,7 +4,7 @@ FROM php:8.3-apache-bullseye
 # Set working directory
 WORKDIR /var/www/html
 
-# Install system dependencies + PostgreSQL client (for pg_isready)
+# Install system dependencies + PostgreSQL client
 RUN apt-get update && apt-get install -y \
     libzip-dev \
     libpng-dev \
@@ -42,11 +42,11 @@ COPY . /var/www/html/
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Set correct permissions
+# Set permissions (safe full paths)
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/bootstrap/cache
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Configure Apache to use Laravel public folder
+# Configure Apache to serve from Laravel public folder
 RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
 
 # Enable Apache modules
@@ -64,10 +64,6 @@ RUN echo '#!/bin/bash' > /usr/local/bin/startup.sh \
     && echo '  sleep 2' >> /usr/local/bin/startup.sh \
     && echo 'done' >> /usr/local/bin/startup.sh \
     && echo 'echo "Database ready!"' >> /usr/local/bin/startup.sh \
-    && echo '' >> /usr/local/bin/startup.sh \
-    && echo 'if [ -z "$APP_KEY" ]; then' >> /usr/local/bin/startup.sh \
-    && echo '  php artisan key:generate --force' >> /usr/local/bin/startup.sh \
-    && echo 'fi' >> /usr/local/bin/startup.sh \
     && echo '' >> /usr/local/bin/startup.sh \
     && echo 'php artisan config:clear' >> /usr/local/bin/startup.sh \
     && echo 'php artisan route:clear' >> /usr/local/bin/startup.sh \
@@ -88,8 +84,8 @@ RUN echo '#!/bin/bash' > /usr/local/bin/startup.sh \
     && echo '' >> /usr/local/bin/startup.sh \
     && echo 'php artisan storage:link || true' >> /usr/local/bin/startup.sh \
     && echo '' >> /usr/local/bin/startup.sh \
-    && echo 'chown -R www-data:www-data storage bootstrap/cache' >> /usr/local/bin/startup.sh \
-    && echo 'chmod -R 775 storage bootstrap/cache' >> /usr/local/bin/startup.sh \
+    && echo 'chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache' >> /usr/local/bin/startup.sh \
+    && echo 'chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache' >> /usr/local/bin/startup.sh \
     && echo '' >> /usr/local/bin/startup.sh \
     && echo 'echo "Laravel ready. Starting Apache..."' >> /usr/local/bin/startup.sh \
     && echo 'exec apache2-foreground' >> /usr/local/bin/startup.sh \
