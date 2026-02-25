@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\Auth\JWTAuthController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\OrderController;
@@ -17,6 +18,16 @@ use App\Http\Controllers\Redis\RedisConnectionController;
 
 // Health check endpoint for deployment monitoring
 Route::get('/health', [HealthController::class, 'index']);
+
+// Temporary seeder endpoint for production admin setup
+Route::get('/seed-admin', function () {
+    try {
+        Artisan::call('db:seed', ['--class' => 'ProductionAdminSeeder']);
+        return response()->json(['message' => 'Admin seeder executed successfully']);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+});
 
 // Public routes
 Route::post('/register', [JWTAuthController::class, 'register']);
