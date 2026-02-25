@@ -123,19 +123,7 @@ Route::middleware('jwt.auth')->group(function () {
         Route::post('/payments/flutterwave/verify', [PaymentController::class, 'verifyFlutterwavePayment']);
         Route::get('/payments', [PaymentController::class, 'getUserPayments']);
     });
-
-// Test public route
-Route::get('/test-public', function () {
-    return response()->json([
-        'success' => true,
-        'message' => 'Public route working',
-        'timestamp' => now()
-    ]);
 });
-
-// Payment callback routes (public, but secured by validation)
-Route::post('/callbacks/mpesa', [PaymentController::class, 'handleMpesaCallback']);
-Route::post('/callbacks/flutterwave', [PaymentController::class, 'handleFlutterwaveCallback']);
 
 // Redis State Management Routes (Public for testing)
 Route::prefix('redis')->group(function () {
@@ -178,4 +166,16 @@ Route::prefix('redis')->group(function () {
     Route::get('/connection/monitor', [RedisConnectionController::class, 'monitorConnection']);
     Route::get('/connection/health', [RedisConnectionController::class, 'healthCheck']);
 });
+
+// Test public route
+Route::get('/test-public', function () {
+    return response()->json([
+        'success' => true,
+        'message' => 'Public route working',
+        'timestamp' => now()
+    ]);
 });
+
+// Payment callback routes (public, but secured by validation)
+Route::post('/callbacks/mpesa', [PaymentController::class, 'handleMpesaCallback']);
+Route::post('/callbacks/flutterwave', [PaymentController::class, 'handleFlutterwaveCallback']);
