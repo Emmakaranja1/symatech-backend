@@ -18,17 +18,6 @@ use App\Http\Controllers\Redis\RedisConnectionController;
 // Health check endpoint for deployment monitoring
 Route::get('/health', [HealthController::class, 'index']);
 
-// Simple debug route
-Route::get('/debug', function () {
-    return response()->json([
-        'message' => 'Laravel is working!',
-        'timestamp' => now(),
-        'php_version' => PHP_VERSION,
-        'laravel_version' => app()->version(),
-        'environment' => app()->environment(),
-    ]);
-});
-
 // Public routes
 Route::post('/register', [JWTAuthController::class, 'register']);
 Route::post('/login', [JWTAuthController::class, 'login']);
