@@ -27,8 +27,8 @@ class ProductController extends Controller
             ->map(function ($product) {
                 return [
                     'id' => $product->id,
-                    'title' => $product->title ?: $product->name,
-                    'category' => $product->category,
+                    'title' => $product->title ?: $product->name ?: 'Untitled Product',
+                    'category' => $product->category ?: 'Uncategorized',
                     'price' => (float) $product->price,
                     'stock' => $product->stock,
                     'description' => $product->description,
