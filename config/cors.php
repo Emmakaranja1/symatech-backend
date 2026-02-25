@@ -25,16 +25,21 @@ return [
         'https://symatech-assesment-frontend-raurc4nau-emmas-projects-edf04c29.vercel.app/',
         'https://symatech-assesment-frontend.vercel.app/',
         'https://symatech-assesment-frontend.vercel.app',
+        'https://symatech-assesment-frontend-duqq3ediu-emmas-projects-edf04c29.vercel.app',
+        'https://symatech-assesment-frontend-duqq3ediu-emmas-projects-edf04c29.vercel.app/',
 
     ],
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        'https://symatech-assesment-frontend-*-emmas-projects-*.vercel.app',
+        'https://symatech-assesment-frontend*.vercel.app',
+    ],
 
     'allowed_headers' => ['*'],
 
     'exposed_headers' => [],
 
-    'max_age' => 0,
+    'max_age' => 3600,
 
     'supports_credentials' => true,
 
