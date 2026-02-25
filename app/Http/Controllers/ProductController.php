@@ -9,6 +9,89 @@ use Spatie\Activitylog\Facades\Activity;
 
 class ProductController extends Controller
 {
+    // Public products API
+    public function publicIndex()
+    {
+        $products = Product::where('active', true)
+            ->select([
+                'id', 
+                'title', 
+                'category', 
+                'price', 
+                'stock', 
+                'description', 
+                'image', 
+                'rating'
+            ])
+            ->get()
+            ->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'title' => $product->title ?: $product->name,
+                    'category' => $product->category,
+                    'price' => (float) $product->price,
+                    'stock' => $product->stock,
+                    'description' => $product->description,
+                    'image' => $product->image,
+                    'rating' => (float) $product->rating,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $products,
+            'message' => 'Products retrieved successfully'
+        ], 200);
+    }
+
+    // Admin products API
+    public function adminIndex()
+    {
+        $products = Product::select([
+            'id', 
+            'name', 
+            'sku', 
+            'category', 
+            'price', 
+            'cost_price', 
+            'stock', 
+            'weight', 
+            'dimensions', 
+            'description', 
+            'images', 
+            'active', 
+            'featured', 
+            'status'
+        ])
+        ->get()
+        ->map(function ($product) {
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'category' => $product->category,
+                'price' => $product->formatted_price,
+                'costPrice' => $product->formatted_cost_price,
+                'stock' => $product->stock,
+                'weight' => $product->weight,
+                'dimensions' => $product->dimensions,
+                'description' => $product->description,
+                'active' => $product->active,
+                'featured' => $product->featured,
+                'status' => $product->status,
+                'images' => $product->images ?? [],
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'products' => $products
+            ],
+            'message' => 'Admin products retrieved successfully'
+        ], 200);
+    }
+
     // List all products
     public function index()
     {

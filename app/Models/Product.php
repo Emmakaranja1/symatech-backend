@@ -14,9 +14,52 @@ class Product extends Model
    
      use HasFactory, LogsActivity;
 
-    protected $fillable = ['name', 'description', 'price', 'stock', 'category', 'image', 'rating'];
+    protected $fillable = [
+        'name', 
+        'title', 
+        'sku', 
+        'category', 
+        'price', 
+        'cost_price', 
+        'stock', 
+        'weight', 
+        'dimensions', 
+        'description', 
+        'image', 
+        'images', 
+        'rating', 
+        'active', 
+        'featured', 
+        'status'
+    ];
 
-    protected static $logAttributes = ['name', 'price', 'stock', 'category', 'image', 'rating'];
+    protected $casts = [
+        'price' => 'decimal:2',
+        'cost_price' => 'decimal:2',
+        'rating' => 'decimal:2',
+        'images' => 'array',
+        'active' => 'boolean',
+        'featured' => 'boolean',
+    ];
+
+    protected static $logAttributes = [
+        'name', 
+        'title', 
+        'sku', 
+        'category', 
+        'price', 
+        'cost_price', 
+        'stock', 
+        'weight', 
+        'dimensions', 
+        'description', 
+        'image', 
+        'images', 
+        'rating', 
+        'active', 
+        'featured', 
+        'status'
+    ];
 
    public function getActivitylogOptions(): LogOptions
 {
@@ -58,6 +101,31 @@ class Product extends Model
             'changes' => $product->getChanges()
         ]);
     });
+
+    static::saving(function ($product) {
+        $product->status = $product->calculateStatus();
+    });
+}
+
+public function calculateStatus()
+{
+    if ($this->stock === 0) {
+        return 'out_of_stock';
+    }
+    if ($this->stock <= 3) {
+        return 'low_stock';
+    }
+    return 'active';
+}
+
+public function getFormattedPriceAttribute()
+{
+    return 'KES ' . number_format($this->price, 2);
+}
+
+public function getFormattedCostPriceAttribute()
+{
+    return 'KES ' . number_format($this->cost_price, 2);
 }
 
 }

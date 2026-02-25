@@ -37,6 +37,9 @@ Route::get('/database-reset', [DatabaseResetController::class, 'clearAndReseed']
 Route::post('/register', [JWTAuthController::class, 'register']);
 Route::post('/login', [JWTAuthController::class, 'login']);
 
+// Public products endpoint
+Route::get('/products', [ProductController::class, 'publicIndex']);
+
 // JWT Authentication routes
 Route::prefix('auth')->group(function () {
     Route::post('/register', [JWTAuthController::class, 'register']);
@@ -66,7 +69,7 @@ Route::middleware('jwt.auth')->group(function () {
         Route::get('/admin/products/{id}', [ProductController::class, 'show']);
         Route::put('/admin/products/{id}', [ProductController::class, 'update']);
         Route::delete('/admin/products/{id}', [ProductController::class, 'destroy']);
-        Route::get('/admin/products', [ProductController::class, 'index']);
+        Route::get('/admin/products', [ProductController::class, 'adminIndex']);
 
         // order management
         Route::get('/admin/orders', [OrderController::class, 'adminIndex']); // List All Orders with filters and pagination
@@ -104,8 +107,7 @@ Route::middleware('jwt.auth')->group(function () {
 
     // ------------------- NORMAL USER ROUTES -------------------
     Route::middleware('role:user')->group(function () {
-        // product management
-        Route::get('/products', [ProductController::class, 'index']);
+        // product management (protected routes with ID)
         Route::get('/products/{id}', [ProductController::class, 'show']);
         
         // order management
