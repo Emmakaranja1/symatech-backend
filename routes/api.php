@@ -79,6 +79,9 @@ Route::middleware('jwt.auth')->group(function () {
 
         // Reporting System (Admin Only)
         Route::prefix('admin/reports')->group(function () {
+            // Real-time Dashboard Data
+            Route::get('/realtime-data', [ReportingController::class, 'realtimeData']);
+            
             // Dashboard Statistics
             Route::get('/dashboard', [ReportingController::class, 'dashboardStats']);
             

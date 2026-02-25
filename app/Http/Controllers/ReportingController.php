@@ -387,6 +387,51 @@ class ReportingController extends Controller
     }
 
     /**
+     * Get real-time dashboard data
+     */
+    public function realtimeData(Request $request)
+    {
+        $force = $request->query('force', false);
+        
+        // Cache for 30 seconds unless force=true
+        $cacheKey = 'dashboard_realtime_data';
+        if (!$force) {
+            $cached = cache()->get($cacheKey);
+            if ($cached) {
+                return response()->json($cached);
+            }
+        }
+        
+        // Get current statistics
+        $totalUsers = User::count();
+        $activeUsers = User::where('status', true)->count();
+        $newUsersToday = User::whereDate('created_at', today())->count();
+        
+        // Calculate revenue and orders (you'll need to add Order model)
+        $totalOrders = 5; // Placeholder - calculate from orders table
+        $totalRevenue = 504893; // Placeholder - calculate from orders
+        
+        // Calculate growth rate (compare with last month)
+        $lastMonthUsers = User::where('created_at', '<=', now()->subMonth())->count();
+        $growthRate = $lastMonthUsers > 0 
+            ? round((($totalUsers - $lastMonthUsers) / $lastMonthUsers) * 100, 1) 
+            : 0;
+        
+        $data = [
+            "totalRevenue" => "KES " . number_format($totalRevenue),
+            "totalOrders" => $totalOrders,
+            "totalUsers" => $totalUsers,
+            "growthRate" => $growthRate >= 0 ? "+{$growthRate}%" : "{$growthRate}%",
+            "timestamp" => now()->toISOString()
+        ];
+        
+        // Cache for 30 seconds
+        cache()->put($cacheKey, $data, 30);
+        
+        return response()->json($data);
+    }
+
+    /**
      * Get comprehensive dashboard statistics
      */
     public function dashboardStats(Request $request)
