@@ -21,12 +21,8 @@ return [
 
     'allowed_origins' => [
 
-        'https://symatech-assesment-frontend-raurc4nau-emmas-projects-edf04c29.vercel.app',
-        'https://symatech-assesment-frontend-raurc4nau-emmas-projects-edf04c29.vercel.app/',
-        'https://symatech-assesment-frontend.vercel.app/',
-        'https://symatech-assesment-frontend.vercel.app',
-        'https://symatech-assesment-frontend-duqq3ediu-emmas-projects-edf04c29.vercel.app',
-        'https://symatech-assesment-frontend-duqq3ediu-emmas-projects-edf04c29.vercel.app/',
+        'https://symatechfrontend.vercel.app/',
+        'https://symatechfrontend.vercel.app'
 
     ],
 
