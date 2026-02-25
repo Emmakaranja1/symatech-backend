@@ -20,6 +20,7 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
+        'https://symatech-assesment-frontend.vercel.app',
         'https://symatech-assesment-frontend.vercel.app/',
     ],
 
