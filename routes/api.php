@@ -10,6 +10,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReportingController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\DatabaseResetController;
 use App\Http\Controllers\Redis\ShoppingCartController;
 use App\Http\Controllers\Redis\UserPreferencesController;
 use App\Http\Controllers\Redis\PaymentSessionController;
@@ -28,6 +29,9 @@ Route::get('/seed-admin', function () {
         return response()->json(['error' => $e->getMessage()], 500);
     }
 });
+
+// Database reset endpoint for clearing and reseeding
+Route::get('/database-reset', [DatabaseResetController::class, 'clearAndReseed']);
 
 // Public routes
 Route::post('/register', [JWTAuthController::class, 'register']);
