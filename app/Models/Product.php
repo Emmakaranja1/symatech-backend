@@ -14,9 +14,9 @@ class Product extends Model
    
      use HasFactory, LogsActivity;
 
-    protected $fillable = ['name', 'description', 'price', 'stock'];
+    protected $fillable = ['name', 'description', 'price', 'stock', 'category', 'image', 'rating'];
 
-    protected static $logAttributes = ['name', 'price', 'stock'];
+    protected static $logAttributes = ['name', 'price', 'stock', 'category', 'image', 'rating'];
 
    public function getActivitylogOptions(): LogOptions
 {
