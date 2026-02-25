@@ -28,10 +28,10 @@ class ProductController extends Controller
                 return [
                     'id' => $product->id,
                     'title' => $product->title ?: $product->name ?: 'Untitled Product',
-                    'category' => $product->category ?: 'Uncategorized',
+                    'category' => $product->category ?: 'General',
                     'price' => (float) $product->price,
                     'stock' => $product->stock,
-                    'description' => $product->description,
+                    'description' => $product->description ?: 'No description available',
                     'image' => $product->image,
                     'rating' => (float) $product->rating,
                 ];
@@ -122,6 +122,7 @@ public function store(Request $request)
         'description' => 'nullable|string',
         'price' => 'required|numeric|min:0',
         'stock' => 'required|integer|min:0',
+        'category' => 'required|string|max:255',
     ]);
 
     \DB::beginTransaction();
@@ -162,6 +163,7 @@ public function store(Request $request)
             'description' => 'nullable|string',
             'price' => 'sometimes|required|numeric|min:0',
             'stock' => 'sometimes|required|integer|min:0',
+            'category' => 'sometimes|required|string|max:255',
         ]);
 
         $product->update($validated);
