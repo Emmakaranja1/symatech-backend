@@ -36,7 +36,6 @@ Route::post('/login', [JWTAuthController::class, 'login']);
 // JWT Authentication routes
 Route::prefix('auth')->group(function () {
     Route::post('/register', [JWTAuthController::class, 'register']);
-    Route::post('/register-admin', [JWTAuthController::class, 'registerAdmin']);
     Route::post('/login', [JWTAuthController::class, 'login']);
     
     // JWT protected routes
