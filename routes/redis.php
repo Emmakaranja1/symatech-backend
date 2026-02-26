@@ -17,14 +17,17 @@ use App\Http\Controllers\Redis\RedisConnectionController;
 |
 */
 
-Route::prefix('redis')->group(function () {
-    // Shopping Cart Routes
-    Route::post('/cart/add', [ShoppingCartController::class, 'addItem']);
-    Route::get('/cart', [ShoppingCartController::class, 'getCart']);
-    Route::delete('/cart/item', [ShoppingCartController::class, 'removeItem']);
-    Route::put('/cart/quantity', [ShoppingCartController::class, 'updateQuantity']);
-    Route::delete('/cart', [ShoppingCartController::class, 'clearCart']);
-    Route::get('/cart/summary', [ShoppingCartController::class, 'getCartSummary']);
+// No prefix here since RouteServiceProvider already adds 'api/redis' prefix
+Route::group([], function () {
+    // Shopping Cart Routes (Require Authentication)
+    Route::middleware('jwt.auth')->group(function () {
+        Route::post('/cart/add', [ShoppingCartController::class, 'addItem']);
+        Route::get('/cart', [ShoppingCartController::class, 'getCart']);
+        Route::delete('/cart/item', [ShoppingCartController::class, 'removeItem']);
+        Route::put('/cart/quantity', [ShoppingCartController::class, 'updateQuantity']);
+        Route::delete('/cart', [ShoppingCartController::class, 'clearCart']);
+        Route::get('/cart/summary', [ShoppingCartController::class, 'getCartSummary']);
+    });
 
     // User Preferences Routes
     Route::post('/preferences/set', [UserPreferencesController::class, 'setPreference']);

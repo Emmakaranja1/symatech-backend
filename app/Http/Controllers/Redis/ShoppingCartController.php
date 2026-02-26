@@ -48,9 +48,21 @@ class ShoppingCartController extends Controller
         $quantity = $request->input('quantity');
 
         try {
+            // Get product information to include price
+            $product = \App\Models\Product::find($productId);
+            if (!$product) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Product not found',
+                    'error_code' => 'PRODUCT_NOT_FOUND'
+                ], 404);
+            }
+
             $success = $this->cartService->addItem($userId, [
                 'product_id' => $productId,
-                'quantity' => $quantity
+                'quantity' => $quantity,
+                'price' => $product->price,
+                'name' => $product->name
             ]);
 
             if ($success) {
@@ -60,7 +72,8 @@ class ShoppingCartController extends Controller
                     'data' => [
                         'user_id' => $userId,
                         'product_id' => $productId,
-                        'quantity' => $quantity
+                        'quantity' => $quantity,
+                        'price' => $product->price
                     ]
                 ]);
             } else {
@@ -83,19 +96,16 @@ class ShoppingCartController extends Controller
 
     public function getCart(Request $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|integer',
-        ]);
-
-        if ($validator->fails()) {
+        // Require authentication
+        if (!auth()->check()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
+                'message' => 'Authentication required',
+                'error_code' => 'AUTHENTICATION_REQUIRED'
+            ], 401);
         }
-
-        $userId = $request->input('user_id');
+        
+        $userId = auth()->id();
         $cart = $this->cartService->getCart($userId);
         $cartCount = $this->cartService->getCartCount($userId);
         $cartTotal = $this->cartService->getCartTotal($userId);
@@ -113,8 +123,18 @@ class ShoppingCartController extends Controller
 
     public function removeItem(Request $request): JsonResponse
     {
+        // Require authentication
+        if (!auth()->check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication required',
+                'error_code' => 'AUTHENTICATION_REQUIRED'
+            ], 401);
+        }
+        
+        $userId = auth()->id();
+        
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|integer',
             'product_id' => 'required|integer',
         ]);
 
@@ -126,7 +146,6 @@ class ShoppingCartController extends Controller
             ], 422);
         }
 
-        $userId = $request->input('user_id');
         $itemId = $request->input('product_id');
 
         $success = $this->cartService->removeItem($userId, $itemId);
@@ -146,8 +165,18 @@ class ShoppingCartController extends Controller
 
     public function updateQuantity(Request $request): JsonResponse
     {
+        // Require authentication
+        if (!auth()->check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication required',
+                'error_code' => 'AUTHENTICATION_REQUIRED'
+            ], 401);
+        }
+        
+        $userId = auth()->id();
+        
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|integer',
             'product_id' => 'required|integer',
             'quantity' => 'required|integer|min:1',
         ]);
@@ -160,7 +189,6 @@ class ShoppingCartController extends Controller
             ], 422);
         }
 
-        $userId = $request->input('user_id');
         $itemId = $request->input('product_id');
         $quantity = $request->input('quantity');
 
@@ -181,19 +209,16 @@ class ShoppingCartController extends Controller
 
     public function clearCart(Request $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|integer',
-        ]);
-
-        if ($validator->fails()) {
+        // Require authentication
+        if (!auth()->check()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
+                'message' => 'Authentication required',
+                'error_code' => 'AUTHENTICATION_REQUIRED'
+            ], 401);
         }
-
-        $userId = $request->input('user_id');
+        
+        $userId = auth()->id();
         $success = $this->cartService->clearCart($userId);
 
         if ($success) {
@@ -211,19 +236,16 @@ class ShoppingCartController extends Controller
 
     public function getCartSummary(Request $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|integer',
-        ]);
-
-        if ($validator->fails()) {
+        // Require authentication
+        if (!auth()->check()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
+                'message' => 'Authentication required',
+                'error_code' => 'AUTHENTICATION_REQUIRED'
+            ], 401);
         }
-
-        $userId = $request->input('user_id');
+        
+        $userId = auth()->id();
         $cartCount = $this->cartService->getCartCount($userId);
         $cartTotal = $this->cartService->getCartTotal($userId);
 
