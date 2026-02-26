@@ -9,6 +9,7 @@ use App\Exports\OrdersExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Dompdf\Dompdf;
 use Dompdf\Options;
+use Illuminate\Support\Facades\Validator;
 
 class OrderController extends Controller
 {
@@ -88,7 +89,7 @@ public function adminIndex(Request $request)
             $validated = $request->validate([
                 'product_sku' => 'sometimes|required_without:product_id|string|exists:products,sku',
                 'product_id' => 'sometimes|required_without:product_sku|integer|exists:products,id',
-                'quantity' => 'required|integer|min:1',
+                'quantity' => 'required|integer|min:1|max:1000',
             ]);
 
             // Get product by SKU or ID
@@ -120,9 +121,49 @@ public function adminIndex(Request $request)
             ], 422);
         }
 
-        // Validate stock
+        // Validate stock and product availability
+        if (!$product) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found',
+                'error_code' => 'PRODUCT_NOT_FOUND'
+            ], 404);
+        }
+
+        if (!$product->active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product is not available for purchase',
+                'error_code' => 'PRODUCT_INACTIVE'
+            ], 400);
+        }
+
         if ($product->stock < $validated['quantity']) {
-            return response()->json(['message' => 'Insufficient stock'], 400);
+            return response()->json([
+                'success' => false,
+                'message' => 'Insufficient stock',
+                'error_code' => 'INSUFFICIENT_STOCK',
+                'available_stock' => $product->stock,
+                'requested_quantity' => $validated['quantity']
+            ], 400);
+        }
+
+        // Check for existing pending orders for the same product to prevent stock issues
+        $existingPendingOrders = Order::where('user_id', $request->user()->id)
+            ->where('product_id', $product->id)
+            ->where('payment_status', 'pending')
+            ->sum('quantity');
+
+        $totalRequestedQuantity = $existingPendingOrders + $validated['quantity'];
+        if ($totalRequestedQuantity > $product->stock) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You have pending orders for this product. Total requested quantity exceeds available stock.',
+                'error_code' => 'EXCEEDS_AVAILABLE_STOCK',
+                'available_stock' => $product->stock,
+                'pending_quantity' => $existingPendingOrders,
+                'requested_quantity' => $validated['quantity']
+            ], 400);
         }
 
         // Deduct stock
@@ -154,14 +195,214 @@ public function adminIndex(Request $request)
         ->log('Order created');
 
         return response()->json([
+            'success' => true,
             'message' => 'Order placed successfully',
             'order_id' => $order->id,
             'product_name' => $product->name,
             'quantity' => $order->quantity,
             'total' => $order->total_price,
+            'formatted_total' => 'KES ' . number_format($order->total_price, 2),
             'payment_status' => $order->payment_status,
-            'next_step' => 'Proceed to payment to complete your order'
+            'order_status' => $order->status,
+            'next_step' => 'Proceed to payment to complete your order',
+            'payment_options' => [
+                'mpesa' => [
+                    'available' => true,
+                    'endpoint' => '/api/payments/mpesa/initiate'
+                ],
+                'flutterwave' => [
+                    'available' => true,
+                    'endpoint' => '/api/payments/flutterwave/initiate'
+                ]
+            ],
+            'created_at' => $order->created_at
         ], 201);
+    }
+
+    /**
+     * Check stock availability for a product
+     */
+    public function checkStock(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'product_sku' => 'sometimes|required_without:product_id|string|exists:products,sku',
+            'product_id' => 'sometimes|required_without:product_sku|integer|exists:products,id',
+            'quantity' => 'required|integer|min:1|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Get product by SKU or ID
+        if (isset($request->product_sku)) {
+            $product = Product::where('sku', $request->product_sku)->first();
+        } else {
+            $product = Product::find($request->product_id);
+        }
+
+        if (!$product) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found',
+                'error_code' => 'PRODUCT_NOT_FOUND'
+            ], 404);
+        }
+
+        $available = $product->stock >= $request->quantity && $product->active;
+        $stockStatus = $product->calculateStatus();
+
+        return response()->json([
+            'success' => true,
+            'available' => $available,
+            'product' => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'price' => $product->price,
+                'formatted_price' => $product->formatted_price,
+                'stock' => $product->stock,
+                'status' => $stockStatus,
+                'active' => $product->active
+            ],
+            'requested_quantity' => $request->quantity,
+            'can_purchase' => $available,
+            'message' => $available 
+                ? 'Product is available for purchase' 
+                : 'Product is not available in the requested quantity'
+        ]);
+    }
+
+    /**
+     * Update order status (admin only)
+     */
+    public function updateStatus(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|string|in:pending,processing,shipped,delivered,cancelled',
+            'notes' => 'nullable|string|max:500'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $order = Order::find($id);
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found'
+            ], 404);
+        }
+
+        $oldStatus = $order->status;
+        $order->status = $request->status;
+        $order->save();
+
+        // Log activity
+        activity()
+            ->causedBy($request->user())
+            ->performedOn($order)
+            ->withProperties([
+                'old_status' => $oldStatus,
+                'new_status' => $request->status,
+                'notes' => $request->notes
+            ])
+            ->log('Order status updated');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order status updated successfully',
+            'order' => $order->load('product', 'user', 'latestPayment')
+        ]);
+    }
+
+    /**
+     * Get order payment status
+     */
+    public function getPaymentStatus(Request $request, $id)
+    {
+        $order = Order::with('latestPayment')
+            ->where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->first();
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'order_id' => $order->id,
+            'order_status' => $order->status,
+            'payment_status' => $order->payment_status,
+            'total_amount' => $order->total_price,
+            'formatted_amount' => 'KES ' . number_format($order->total_price, 2),
+            'payment' => $order->latestPayment ? [
+                'id' => $order->latestPayment->id,
+                'payment_method' => $order->latestPayment->payment_method,
+                'status' => $order->latestPayment->status,
+                'transaction_id' => $order->latestPayment->transaction_id,
+                'created_at' => $order->latestPayment->created_at,
+                'paid_at' => $order->latestPayment->paid_at
+            ] : null,
+            'next_actions' => $this->getNextActions($order)
+        ]);
+    }
+
+    /**
+     * Get next available actions for an order
+     */
+    private function getNextActions($order)
+    {
+        $actions = [];
+
+        if ($order->payment_status === 'pending') {
+            $actions[] = [
+                'action' => 'initiate_payment',
+                'description' => 'Complete payment for this order',
+                'endpoints' => [
+                    'mpesa' => '/api/payments/mpesa/initiate',
+                    'flutterwave' => '/api/payments/flutterwave/initiate'
+                ]
+            ];
+        }
+
+        if ($order->payment_status === 'pending' && $order->latestPayment) {
+            $actions[] = [
+                'action' => 'verify_payment',
+                'description' => 'Check payment status',
+                'endpoints' => [
+                    'mpesa' => '/api/payments/mpesa/verify',
+                    'flutterwave' => '/api/payments/flutterwave/verify'
+                ]
+            ];
+        }
+
+        if ($order->payment_status === 'failed') {
+            $actions[] = [
+                'action' => 'retry_payment',
+                'description' => 'Try payment again',
+                'endpoints' => [
+                    'mpesa' => '/api/payments/mpesa/initiate',
+                    'flutterwave' => '/api/payments/flutterwave/initiate'
+                ]
+            ];
+        }
+
+        return $actions;
     }
 
     // List orders for logged-in user

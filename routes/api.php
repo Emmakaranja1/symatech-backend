@@ -36,6 +36,9 @@ Route::post('/login', [JWTAuthController::class, 'login']);
 Route::get('/products', [ProductController::class, 'publicIndex']);
 Route::get('/products/{id}', [ProductController::class, 'show']);
 
+// Stock check endpoint (public for frontend validation)
+Route::post('/stock/check', [OrderController::class, 'checkStock']);
+
 // JWT Authentication routes
 Route::prefix('auth')->group(function () {
     Route::post('/register', [JWTAuthController::class, 'register']);
@@ -71,6 +74,7 @@ Route::middleware('jwt.auth')->group(function () {
         Route::get('/admin/orders', [OrderController::class, 'adminIndex']); // List All Orders with filters and pagination
         Route::get('/admin/orders/export/excel', [OrderController::class, 'exportExcel']); // Export Orders to Excel
         Route::get('/admin/orders/export/pdf', [OrderController::class, 'exportPdf']); // Export Orders to PDF
+        Route::patch('/admin/orders/{id}/status', [OrderController::class, 'updateStatus']); // Update order status
 
         // Payment management
         Route::get('/admin/payments', [PaymentController::class, 'getAdminPayments']);
@@ -107,6 +111,7 @@ Route::middleware('jwt.auth')->group(function () {
         Route::post('/orders', [OrderController::class, 'store']);
         Route::get('/orders', [OrderController::class, 'index']); 
         Route::get('/orders/{id}', [OrderController::class, 'show']);
+        Route::get('/orders/{id}/payment-status', [OrderController::class, 'getPaymentStatus']);
         Route::delete('/orders/{id}', [OrderController::class, 'destroy']);
 
         // Payment management

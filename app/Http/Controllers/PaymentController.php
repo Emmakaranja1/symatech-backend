@@ -32,7 +32,12 @@ class PaymentController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+                'error_code' => 'VALIDATION_ERROR'
+            ], 422);
         }
 
         try {
@@ -55,7 +60,9 @@ class PaymentController extends Controller
                     'order_user_id' => $order->user_id
                 ]);
                 return response()->json([
+                    'success' => false,
                     'message' => 'Unauthorized - Order does not belong to this user',
+                    'error_code' => 'UNAUTHORIZED',
                     'debug' => [
                         'order_user_id' => $order->user_id,
                         'your_user_id' => $request->user()->id
@@ -65,7 +72,30 @@ class PaymentController extends Controller
 
             // Check if order is already paid
             if ($order->payment_status === 'paid') {
-                return response()->json(['message' => 'Order already paid'], 400);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order already paid',
+                    'error_code' => 'ORDER_ALREADY_PAID',
+                    'payment_status' => $order->payment_status
+                ], 400);
+            }
+
+            // Check if there's a pending payment for this order
+            $existingPayment = Payment::where('order_id', $order->id)
+                ->where('status', Payment::STATUS_PENDING)
+                ->where('payment_method', Payment::METHOD_MPESA)
+                ->first();
+
+            if ($existingPayment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment already initiated for this order',
+                    'error_code' => 'PAYMENT_ALREADY_INITIATED',
+                    'payment_id' => $existingPayment->id,
+                    'transaction_id' => $existingPayment->transaction_id,
+                    'status' => $existingPayment->status,
+                    'action' => 'Use the verify endpoint to check payment status'
+                ], 409);
             }
 
             $response = $this->mpesaService->initiateStkPush(
@@ -93,28 +123,40 @@ class PaymentController extends Controller
                 ->withProperties([
                     'order_id' => $order->id,
                     'amount' => $order->total_price,
-                    'payment_method' => 'mpesa'
+                    'payment_method' => 'mpesa',
+                    'phone_number' => $request->phone_number
                 ])
                 ->log('M-PESA payment initiated');
 
             return response()->json([
+                'success' => true,
                 'message' => 'M-PESA payment initiated successfully',
                 'payment_id' => $payment->id,
                 'checkout_request_id' => $response['CheckoutRequestID'] ?? null,
                 'merchant_request_id' => $response['MerchantRequestID'] ?? null,
-                'customer_message' => 'Please check your phone to complete payment'
+                'customer_message' => 'Please check your phone to complete payment',
+                'amount' => $order->total_price,
+                'formatted_amount' => 'KES ' . number_format($order->total_price, 2),
+                'phone_number' => $request->phone_number,
+                'order_id' => $order->id,
+                'next_action' => 'verify_payment',
+                'verify_endpoint' => '/api/payments/mpesa/verify'
             ], 200);
 
         } catch (\Exception $e) {
             Log::error('M-PESA Payment Initiation Error', [
                 'error' => $e->getMessage(),
                 'order_id' => $request->order_id,
-                'user_id' => $request->user()->id
+                'user_id' => $request->user()->id,
+                'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
+                'success' => false,
                 'message' => 'Failed to initiate M-PESA payment',
-                'error' => $e->getMessage()
+                'error_code' => 'PAYMENT_INITIATION_FAILED',
+                'error' => $e->getMessage(),
+                'suggestion' => 'Please check your phone number and try again'
             ], 500);
         }
     }
@@ -129,23 +171,46 @@ class PaymentController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+                'error_code' => 'VALIDATION_ERROR'
+            ], 422);
         }
 
         try {
             $response = $this->mpesaService->verifyPayment($request->checkout_request_id);
             
-            $resultCode = $response['ResultCode'] ?? null;
             $payment = Payment::where('transaction_id', $request->checkout_request_id)->first();
 
             if (!$payment) {
-                return response()->json(['message' => 'Payment not found'], 404);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment not found',
+                    'error_code' => 'PAYMENT_NOT_FOUND',
+                    'checkout_request_id' => $request->checkout_request_id
+                ], 404);
             }
+
+            // Verify that the payment belongs to the authenticated user
+            if ($payment->order->user_id !== $request->user()->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized - Payment does not belong to this user',
+                    'error_code' => 'UNAUTHORIZED'
+                ], 403);
+            }
+
+            $resultCode = $response['ResultCode'] ?? null;
+            $resultDesc = $response['ResultDesc'] ?? 'Unknown error';
 
             if ($resultCode === 0) {
                 // Payment successful
-                $payment->markAsCompleted();
-                $payment->order->markAsPaid();
+                if ($payment->status !== Payment::STATUS_COMPLETED) {
+                    $payment->markAsCompleted();
+                    $payment->order->markAsPaid();
+                }
 
                 // Log activity
                 activity()
@@ -154,38 +219,63 @@ class PaymentController extends Controller
                     ->withProperties([
                         'order_id' => $payment->order_id,
                         'amount' => $payment->amount,
-                        'payment_method' => 'mpesa'
+                        'payment_method' => 'mpesa',
+                        'result_code' => $resultCode
                     ])
                     ->log('M-PESA payment completed successfully');
 
                 return response()->json([
+                    'success' => true,
                     'message' => 'Payment completed successfully',
                     'payment_status' => 'completed',
                     'order_status' => 'paid',
-                    'response' => $response
+                    'payment_id' => $payment->id,
+                    'order_id' => $payment->order_id,
+                    'amount' => $payment->amount,
+                    'formatted_amount' => 'KES ' . number_format($payment->amount, 2),
+                    'paid_at' => $payment->paid_at,
+                    'response' => [
+                        'ResultCode' => $resultCode,
+                        'ResultDesc' => $resultDesc
+                    ]
                 ], 200);
             } else {
                 // Payment failed
-                $payment->markAsFailed();
-                $payment->order->markPaymentFailed();
+                if ($payment->status !== Payment::STATUS_FAILED) {
+                    $payment->markAsFailed();
+                    $payment->order->markPaymentFailed();
+                }
 
                 return response()->json([
+                    'success' => false,
                     'message' => 'Payment failed',
                     'payment_status' => 'failed',
                     'order_status' => 'failed',
-                    'response' => $response
+                    'payment_id' => $payment->id,
+                    'order_id' => $payment->order_id,
+                    'error_code' => 'PAYMENT_FAILED',
+                    'response' => [
+                        'ResultCode' => $resultCode,
+                        'ResultDesc' => $resultDesc
+                    ],
+                    'suggestion' => 'Please try initiating payment again or contact support'
                 ], 400);
             }
 
         } catch (\Exception $e) {
             Log::error('M-PESA Payment Verification Error', [
                 'error' => $e->getMessage(),
-                'checkout_request_id' => $request->checkout_request_id
+                'checkout_request_id' => $request->checkout_request_id,
+                'user_id' => $request->user()->id,
+                'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
+                'success' => false,
                 'message' => 'Failed to verify M-PESA payment',
-                'error' => $e->getMessage()
+                'error_code' => 'VERIFICATION_FAILED',
+                'error' => $e->getMessage(),
+                'suggestion' => 'Please try again in a few moments'
             ], 500);
         }
     }
