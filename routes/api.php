@@ -34,6 +34,7 @@ Route::post('/login', [JWTAuthController::class, 'login']);
 
 // Public products endpoint
 Route::get('/products', [ProductController::class, 'publicIndex']);
+Route::get('/products/{id}', [ProductController::class, 'show']);
 
 // JWT Authentication routes
 Route::prefix('auth')->group(function () {
@@ -102,9 +103,6 @@ Route::middleware('jwt.auth')->group(function () {
 
     // ------------------- NORMAL USER ROUTES -------------------
     Route::middleware('role:user')->group(function () {
-        // product management (protected routes with ID)
-        Route::get('/products/{id}', [ProductController::class, 'show']);
-        
         // order management
         Route::post('/orders', [OrderController::class, 'store']);
         Route::get('/orders', [OrderController::class, 'index']); 

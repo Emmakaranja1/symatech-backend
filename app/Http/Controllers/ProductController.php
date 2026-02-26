@@ -25,6 +25,20 @@ class ProductController extends Controller
             ])
             ->get()
             ->map(function ($product) {
+                // Handle image URL
+                $imageUrl = $product->image;
+                if ($imageUrl) {
+                    // If it's not a full URL, make it one
+                    if (!str_starts_with($imageUrl, 'http')) {
+                        $imageUrl = url('storage/' . $imageUrl);
+                    }
+                    // Fix escaped slashes
+                    $imageUrl = str_replace('\\/', '/', $imageUrl);
+                } else {
+                    // Provide a placeholder image for products without images
+                    $imageUrl = 'https://picsum.photos/seed/product-' . $product->id . '/400/300.jpg';
+                }
+
                 return [
                     'id' => $product->id,
                     'title' => $product->title ?: $product->name ?: 'Untitled Product',
@@ -32,7 +46,7 @@ class ProductController extends Controller
                     'price' => (float) $product->price,
                     'stock' => $product->stock,
                     'description' => $product->description ?: 'No description available',
-                    'image' => $product->image,
+                    'image' => $imageUrl,
                     'rating' => (float) $product->rating,
                 ];
             });
@@ -65,6 +79,20 @@ class ProductController extends Controller
         ])
         ->get()
         ->map(function ($product) {
+            // Handle images array
+            $images = $product->images ?? [];
+            $processedImages = [];
+            foreach ($images as $image) {
+                if ($image) {
+                    // Fix escaped slashes and ensure full URL
+                    $imageUrl = str_replace('\\/', '/', $image);
+                    if (!str_starts_with($imageUrl, 'http')) {
+                        $imageUrl = url('storage/' . $imageUrl);
+                    }
+                    $processedImages[] = $imageUrl;
+                }
+            }
+
             return [
                 'id' => $product->id,
                 'name' => $product->name,
@@ -79,7 +107,7 @@ class ProductController extends Controller
                 'active' => $product->active,
                 'featured' => $product->featured,
                 'status' => $product->status,
-                'images' => $product->images ?? [],
+                'images' => $processedImages,
             ];
         });
 
@@ -107,7 +135,53 @@ class ProductController extends Controller
             return response()->json(['message' => 'Product not found'], 404);
         }
 
-        return response()->json($product, 200);
+        // Handle image URL
+        $imageUrl = $product->image;
+        if ($imageUrl) {
+            // Fix escaped slashes and ensure full URL
+            $imageUrl = str_replace('\\/', '/', $imageUrl);
+            if (!str_starts_with($imageUrl, 'http')) {
+                $imageUrl = url('storage/' . $imageUrl);
+            }
+        } else {
+            // Provide a placeholder image
+            $imageUrl = 'https://picsum.photos/seed/product-' . $product->id . '/400/300.jpg';
+        }
+
+        // Handle images array
+        $images = $product->images ?? [];
+        $processedImages = [];
+        foreach ($images as $image) {
+            if ($image) {
+                $imageUrl = str_replace('\\/', '/', $image);
+                if (!str_starts_with($imageUrl, 'http')) {
+                    $imageUrl = url('storage/' . $imageUrl);
+                }
+                $processedImages[] = $imageUrl;
+            }
+        }
+
+        $productData = [
+            'id' => $product->id,
+            'name' => $product->name,
+            'title' => $product->title ?: $product->name ?: 'Untitled Product',
+            'sku' => $product->sku,
+            'category' => $product->category,
+            'price' => (float) $product->price,
+            'cost_price' => (float) $product->cost_price,
+            'stock' => $product->stock,
+            'weight' => $product->weight,
+            'dimensions' => $product->dimensions,
+            'description' => $product->description,
+            'image' => $imageUrl,
+            'images' => $processedImages,
+            'rating' => (float) $product->rating,
+            'active' => $product->active,
+            'featured' => $product->featured,
+            'status' => $product->status,
+        ];
+
+        return response()->json($productData, 200);
     }
 // Store new product
 public function store(Request $request)
