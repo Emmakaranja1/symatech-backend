@@ -41,7 +41,7 @@ class ProductController extends Controller
 
                 return [
                     'id' => $product->id,
-                    'title' => $product->title ?: $product->name ?: 'Untitled Product',
+                    'title' => $product->title ?: $product->name,
                     'category' => $product->category ?: 'General',
                     'price' => (float) $product->price,
                     'stock' => $product->stock,
@@ -164,7 +164,7 @@ class ProductController extends Controller
         $productData = [
             'id' => $product->id,
             'name' => $product->name,
-            'title' => $product->title ?: $product->name ?: 'Untitled Product',
+            'title' => $product->title ?: $product->name,
             'sku' => $product->sku,
             'category' => $product->category,
             'price' => (float) $product->price,
@@ -197,6 +197,10 @@ public function store(Request $request)
         'price' => 'required|numeric|min:0',
         'stock' => 'required|integer|min:0',
         'category' => 'required|string|max:255',
+        'image' => 'nullable|url',
+        'images' => 'nullable|array',
+        'images.*' => 'nullable|url',
+        'rating' => 'nullable|numeric|min:0|max:5',
     ]);
 
     \DB::beginTransaction();
@@ -238,6 +242,10 @@ public function store(Request $request)
             'price' => 'sometimes|required|numeric|min:0',
             'stock' => 'sometimes|required|integer|min:0',
             'category' => 'sometimes|required|string|max:255',
+            'image' => 'nullable|url',
+            'images' => 'nullable|array',
+            'images.*' => 'nullable|url',
+            'rating' => 'nullable|numeric|min:0|max:5',
         ]);
 
         $product->update($validated);
