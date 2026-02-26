@@ -11,6 +11,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReportingController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\DatabaseResetController;
+use App\Http\Controllers\CartController;
 
 // Health check endpoint for deployment monitoring
 Route::get('/health', [HealthController::class, 'index']);
@@ -38,6 +39,16 @@ Route::get('/products/{id}', [ProductController::class, 'show']);
 
 // Stock check endpoint (public for frontend validation)
 Route::post('/stock/check', [OrderController::class, 'checkStock']);
+
+// Redis cart endpoints (protected)
+Route::middleware('jwt.auth')->group(function () {
+    Route::post('/redis/cart/add', [CartController::class, 'addToCart']);
+    Route::put('/redis/cart/quantity', [CartController::class, 'updateCartItemQuantity']);
+    Route::delete('/redis/cart/item', [CartController::class, 'removeFromCart']);
+    Route::delete('/redis/cart', [CartController::class, 'clearCart']);
+    Route::get('/redis/cart', [CartController::class, 'getCart']);
+    Route::get('/redis/cart/count', [CartController::class, 'getCartCount']);
+});
 
 // JWT Authentication routes
 Route::prefix('auth')->group(function () {
