@@ -8,7 +8,8 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
-        'https://symatechfrontend.vercel.app'
+        'https://symatechfrontend.vercel.app',
+        'https://symatech-assesment-frontend.vercel.app'
     ],
 
     'allowed_origins_patterns' => [
