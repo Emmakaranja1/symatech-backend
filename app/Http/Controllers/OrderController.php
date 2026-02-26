@@ -75,30 +75,68 @@ public function adminIndex(Request $request)
     // Store a new order
     public function store(Request $request)
     {
-        $request->validate([
-            'product_id' => 'required|integer|exists:products,id',
-            'quantity' => 'required|integer|min:1',
-        ]);
+        // Check if user is authenticated
+        if (!auth()->check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication required to place orders',
+                'error_code' => 'AUTHENTICATION_REQUIRED'
+            ], 401);
+        }
 
-        $product = Product::find($request->product_id);
+        try {
+            $validated = $request->validate([
+                'product_sku' => 'sometimes|required_without:product_id|string|exists:products,sku',
+                'product_id' => 'sometimes|required_without:product_sku|integer|exists:products,id',
+                'quantity' => 'required|integer|min:1',
+            ]);
+
+            // Get product by SKU or ID
+            if (isset($validated['product_sku'])) {
+                $product = Product::where('sku', $validated['product_sku'])->first();
+                $productIdentifier = $validated['product_sku'];
+            } else {
+                $product = Product::find($validated['product_id']);
+                $productIdentifier = $validated['product_id'];
+            }
+
+            // Log the validated data for debugging
+            \Log::info('Order request validated successfully', [
+                'product_identifier' => $productIdentifier,
+                'quantity' => $validated['quantity'],
+                'user_id' => $request->user() ? $request->user()->id : 'null'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Order validation failed', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+                'received_data' => $request->all()
+            ], 422);
+        }
 
         // Validate stock
-        if ($product->stock < $request->quantity) {
+        if ($product->stock < $validated['quantity']) {
             return response()->json(['message' => 'Insufficient stock'], 400);
         }
 
         // Deduct stock
-        $product->stock -= $request->quantity;
+        $product->stock -= $validated['quantity'];
         $product->save();
 
         // Calculate total
-        $totalPrice = $product->price * $request->quantity;
+        $totalPrice = $product->price * $validated['quantity'];
 
         // Save order
         $order = Order::create([
             'user_id' => $request->user()->id,
             'product_id' => $product->id,
-            'quantity' => $request->quantity,
+            'quantity' => $validated['quantity'],
             'total_price' => $totalPrice,
             'status' => 'pending',
             'payment_status' => 'pending',
