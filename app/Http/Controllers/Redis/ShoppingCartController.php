@@ -19,8 +19,18 @@ class ShoppingCartController extends Controller
 
     public function addItem(Request $request): JsonResponse
     {
+        // Require authentication
+        if (!auth()->check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication required',
+                'error_code' => 'AUTHENTICATION_REQUIRED'
+            ], 401);
+        }
+        
+        $userId = auth()->id();
+        
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|integer|exists:users,id',
             'product_id' => 'required|integer|exists:products,id',
             'quantity' => 'required|integer|min:1|max:100',
         ]);
@@ -34,19 +44,6 @@ class ShoppingCartController extends Controller
             ], 422);
         }
 
-        // Additional security: Validate user authorization if user is authenticated
-        // Commented out for testing - uncomment for production
-        /*
-        if (auth()->check() && auth()->id() !== $request->user_id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized cart access',
-                'error_code' => 'UNAUTHORIZED_CART_ACCESS'
-            ], 403);
-        }
-        */
-
-        $userId = $request->input('user_id');
         $productId = $request->input('product_id');
         $quantity = $request->input('quantity');
 
