@@ -408,6 +408,9 @@ For project-related inquiries:
 - **Issues**: Follow project issue reporting guidelines
 - **Best Practices**: Adhere to established coding standards
 
+
+https://emma-343334.postman.co/workspace/Symatech-Labs-Backend~27761dd2-1913-4942-bb81-7702adabc06e/folder/43467977-73e2ca27-8c30-42e0-98c1-dd1909d3578a?action=share&creator=43467977&ctx=documentation
+
 ---
 
 **Note**: This e-commerce backend API follows industry best practices for security, performance, and maintainability. All sensitive configuration details are kept in environment files and excluded from version control. The project demonstrates comprehensive e-commerce functionality including product catalog, shopping cart, order processing, and payment integration suitable for production deployment.
